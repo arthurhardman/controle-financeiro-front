@@ -17,7 +17,6 @@ import {
   Brightness4, 
   Brightness7, 
   AccountCircle, 
-  Menu as MenuIcon,
   Savings
 } from '@mui/icons-material';
 
