@@ -251,10 +251,10 @@ export default function Dashboard() {
   }
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Grid container spacing={3}>
+    <Container maxWidth="lg" sx={{ mt: { xs: 2, md: 4 }, mb: { xs: 2, md: 4 }, px: { xs: 1, sm: 2 } }}>
+      <Grid container spacing={{ xs: 2, md: 3 }}>
         {/* Cards de Resumo */}
-        <Grid item xs={12} md={4}>
+        <Grid item xs={12} sm={6} md={4}>
           <Card 
             sx={{ 
               background: 'linear-gradient(45deg, #059669 30%, #10B981 90%)',
@@ -263,23 +263,24 @@ export default function Dashboard() {
               transition: 'transform 0.2s',
               '&:hover': {
                 transform: 'translateY(-5px)'
-              }
+              },
+              height: '100%'
             }}
           >
-            <CardContent>
+            <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
               <Box display="flex" alignItems="center" mb={2}>
-                <TrendingUpIcon sx={{ mr: 1, fontSize: 28 }} />
-                <Typography variant="h6" sx={{ fontWeight: 500 }}>
+                <TrendingUpIcon sx={{ mr: 1, fontSize: { xs: 24, sm: 28 } }} />
+                <Typography variant="h6" sx={{ fontWeight: 500, fontSize: { xs: '1rem', sm: '1.25rem' } }}>
                   Receitas Totais
                 </Typography>
               </Box>
-              <Typography variant="h4" component="div" sx={{ fontWeight: 600 }}>
+              <Typography variant="h4" component="div" sx={{ fontWeight: 600, fontSize: { xs: '1.5rem', sm: '2rem' } }}>
                 {formatCurrency(stats.totalIncome)}
               </Typography>
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} md={4}>
+        <Grid item xs={12} sm={6} md={4}>
           <Card 
             sx={{ 
               background: 'linear-gradient(45deg, #DC2626 30%, #EF4444 90%)',
@@ -288,23 +289,24 @@ export default function Dashboard() {
               transition: 'transform 0.2s',
               '&:hover': {
                 transform: 'translateY(-5px)'
-              }
+              },
+              height: '100%'
             }}
           >
-            <CardContent>
+            <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
               <Box display="flex" alignItems="center" mb={2}>
-                <TrendingDownIcon sx={{ mr: 1, fontSize: 28 }} />
-                <Typography variant="h6" sx={{ fontWeight: 500 }}>
+                <TrendingDownIcon sx={{ mr: 1, fontSize: { xs: 24, sm: 28 } }} />
+                <Typography variant="h6" sx={{ fontWeight: 500, fontSize: { xs: '1rem', sm: '1.25rem' } }}>
                   Despesas Totais
                 </Typography>
               </Box>
-              <Typography variant="h4" component="div" sx={{ fontWeight: 600 }}>
+              <Typography variant="h4" component="div" sx={{ fontWeight: 600, fontSize: { xs: '1.5rem', sm: '2rem' } }}>
                 {formatCurrency(stats.totalExpense)}
               </Typography>
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} md={4}>
+        <Grid item xs={12} sm={6} md={4}>
           <Card 
             sx={{ 
               background: stats.balance >= 0 
@@ -317,17 +319,18 @@ export default function Dashboard() {
               transition: 'transform 0.2s',
               '&:hover': {
                 transform: 'translateY(-5px)'
-              }
+              },
+              height: '100%'
             }}
           >
-            <CardContent>
+            <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
               <Box display="flex" alignItems="center" mb={2}>
-                <AccountBalanceIcon sx={{ mr: 1, fontSize: 28 }} />
-                <Typography variant="h6" sx={{ fontWeight: 500 }}>
+                <AccountBalanceIcon sx={{ mr: 1, fontSize: { xs: 24, sm: 28 } }} />
+                <Typography variant="h6" sx={{ fontWeight: 500, fontSize: { xs: '1rem', sm: '1.25rem' } }}>
                   Saldo
                 </Typography>
               </Box>
-              <Typography variant="h4" component="div" sx={{ fontWeight: 600 }}>
+              <Typography variant="h4" component="div" sx={{ fontWeight: 600, fontSize: { xs: '1.5rem', sm: '2rem' } }}>
                 {formatCurrency(stats.balance)}
               </Typography>
             </CardContent>
@@ -339,13 +342,15 @@ export default function Dashboard() {
           <Card sx={{ 
             boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
             borderRadius: 2,
-            overflow: 'hidden'
+            overflow: 'hidden',
+            height: '100%'
           }}>
-            <CardContent>
+            <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
               <Typography variant="h6" gutterBottom sx={{ 
                 fontWeight: 600,
                 color: '#1F2937',
-                mb: 3
+                mb: 3,
+                fontSize: { xs: '1rem', sm: '1.25rem' }
               }}>
                 Receitas vs Despesas (Últimos 6 meses)
               </Typography>
@@ -355,18 +360,18 @@ export default function Dashboard() {
                   <XAxis 
                     dataKey="month" 
                     stroke="#6B7280"
-                    tick={{ fill: '#6B7280' }}
+                    tick={{ fill: '#6B7280', fontSize: 12 }}
                   />
                   <YAxis 
                     stroke="#6B7280"
-                    tick={{ fill: '#6B7280' }}
+                    tick={{ fill: '#6B7280', fontSize: 12 }}
                     tickFormatter={(value) => formatCurrency(value)}
                   />
                   <RechartsTooltip 
                     content={<CustomTooltip />}
                     cursor={{ fill: 'rgba(0, 0, 0, 0.05)' }}
                   />
-                  <Legend />
+                  <Legend wrapperStyle={{ fontSize: 12 }} />
                   <Bar 
                     dataKey="income" 
                     name="Receitas" 
@@ -390,13 +395,15 @@ export default function Dashboard() {
           <Card sx={{ 
             boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
             borderRadius: 2,
-            overflow: 'hidden'
+            overflow: 'hidden',
+            height: '100%'
           }}>
-            <CardContent>
+            <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
               <Typography variant="h6" gutterBottom sx={{ 
                 fontWeight: 600,
                 color: '#1F2937',
-                mb: 3
+                mb: 3,
+                fontSize: { xs: '1rem', sm: '1.25rem' }
               }}>
                 Despesas por Categoria
               </Typography>
@@ -427,7 +434,8 @@ export default function Dashboard() {
                       backgroundColor: 'white',
                       borderRadius: '8px',
                       border: 'none',
-                      boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)'
+                      boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
+                      fontSize: 12
                     }}
                   />
                   <Legend 
@@ -435,7 +443,8 @@ export default function Dashboard() {
                     verticalAlign="middle"
                     align="right"
                     wrapperStyle={{
-                      paddingLeft: '20px'
+                      paddingLeft: '20px',
+                      fontSize: 12
                     }}
                   />
                 </PieChart>
@@ -451,11 +460,12 @@ export default function Dashboard() {
             borderRadius: 2,
             overflow: 'hidden'
           }}>
-            <CardContent>
+            <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
               <Typography variant="h6" gutterBottom sx={{ 
                 fontWeight: 600,
                 color: '#1F2937',
-                mb: 3
+                mb: 3,
+                fontSize: { xs: '1rem', sm: '1.25rem' }
               }}>
                 Saldo Mensal
               </Typography>
@@ -465,18 +475,18 @@ export default function Dashboard() {
                   <XAxis 
                     dataKey="month" 
                     stroke="#6B7280"
-                    tick={{ fill: '#6B7280' }}
+                    tick={{ fill: '#6B7280', fontSize: 12 }}
                   />
                   <YAxis 
                     stroke="#6B7280"
-                    tick={{ fill: '#6B7280' }}
+                    tick={{ fill: '#6B7280', fontSize: 12 }}
                     tickFormatter={(value) => formatCurrency(value)}
                   />
                   <RechartsTooltip 
                     content={<CustomTooltip />}
                     cursor={{ stroke: '#2563EB', strokeWidth: 2 }}
                   />
-                  <Legend />
+                  <Legend wrapperStyle={{ fontSize: 12 }} />
                   <Line 
                     type="monotone" 
                     dataKey="balance" 

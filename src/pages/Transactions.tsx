@@ -25,6 +25,7 @@ import {
   Grid,
   Chip,
   InputAdornment,
+  Collapse,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -33,6 +34,7 @@ import {
   Delete as DeleteIcon,
   TrendingUp as TrendingUpIcon,
   TrendingDown as TrendingDownIcon,
+  FilterList as FilterListIcon,
 } from '@mui/icons-material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -110,6 +112,7 @@ export default function Transactions() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [total, setTotal] = useState(0);
+  const [showFilters, setShowFilters] = useState(false);
 
   const fetchTransactions = async () => {
     try {
@@ -210,116 +213,119 @@ export default function Transactions() {
   };
 
   return (
-    <Box p={3}>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4">Transações</Typography>
-        <Button
-          variant="contained"
-          color="primary"
-          startIcon={<AddIcon />}
-          onClick={handleOpenDialog}
-        >
-          Nova Transação
-        </Button>
+    <Box p={{ xs: 2, md: 3 }}>
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3} flexDirection={{ xs: 'column', sm: 'row' }} gap={{ xs: 2, sm: 0 }}>
+        <Typography variant="h4" sx={{ fontSize: { xs: '1.5rem', md: '2rem' } }}>
+          Transações
+        </Typography>
+        <Box display="flex" gap={2} width={{ xs: '100%', sm: 'auto' }}>
+          <Button
+            variant="outlined"
+            color="primary"
+            startIcon={<FilterListIcon />}
+            onClick={() => setShowFilters(!showFilters)}
+            sx={{ 
+              width: { xs: '50%', sm: 'auto' }
+            }}
+          >
+            Filtros
+          </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<AddIcon />}
+            onClick={handleOpenDialog}
+            sx={{ 
+              width: { xs: '50%', sm: 'auto' }
+            }}
+          >
+            Nova Transação
+          </Button>
+        </Box>
       </Box>
 
       {/* Filtros */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <Grid container spacing={2}>
-            <Grid item xs={12} md={3}>
-              <TextField
-                fullWidth
-                label="Buscar"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <FormControl fullWidth>
-                <InputLabel>Categoria</InputLabel>
-                <Select
-                  value={selectedCategory}
-                  label="Categoria"
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                >
-                  <MenuItem value="">Todas</MenuItem>
-                  {categories.map((category) => (
-                    <MenuItem key={category} value={category}>
-                      {category}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <FormControl fullWidth>
-                <InputLabel>Tipo</InputLabel>
-                <Select
-                  value={selectedType}
-                  label="Tipo"
-                  onChange={(e) => setSelectedType(e.target.value)}
-                >
-                  <MenuItem value="">Todos</MenuItem>
-                  {types.map((type) => (
-                    <MenuItem key={type.value} value={type.value}>
-                      {type.label}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <FormControl fullWidth>
-                <InputLabel>Status</InputLabel>
-                <Select
-                  value={selectedStatus}
-                  label="Status"
-                  onChange={(e) => setSelectedStatus(e.target.value)}
-                >
-                  <MenuItem value="">Todos</MenuItem>
-                  {statuses.map((status) => (
-                    <MenuItem key={status.value} value={status.value}>
-                      {status.label}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ptBR}>
-                <DatePicker
-                  label="Data Inicial"
-                  value={startDate}
-                  onChange={setStartDate}
-                  slotProps={{ textField: { fullWidth: true } }}
+      <Collapse in={showFilters}>
+        <Card sx={{ mb: 3 }}>
+          <CardContent>
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6} md={3}>
+                <TextField
+                  fullWidth
+                  label="Buscar"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchIcon />
+                      </InputAdornment>
+                    ),
+                  }}
                 />
-              </LocalizationProvider>
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <FormControl fullWidth>
+                  <InputLabel>Tipo</InputLabel>
+                  <Select
+                    value={selectedType}
+                    label="Tipo"
+                    onChange={(e) => setSelectedType(e.target.value)}
+                  >
+                    <MenuItem value="">Todos</MenuItem>
+                    {types.map((type) => (
+                      <MenuItem key={type.value} value={type.value}>
+                        {type.label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <FormControl fullWidth>
+                  <InputLabel>Status</InputLabel>
+                  <Select
+                    value={selectedStatus}
+                    label="Status"
+                    onChange={(e) => setSelectedStatus(e.target.value)}
+                  >
+                    <MenuItem value="">Todos</MenuItem>
+                    {statuses.map((status) => (
+                      <MenuItem key={status.value} value={status.value}>
+                        {status.label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ptBR}>
+                  <DatePicker
+                    label="Data Inicial"
+                    value={startDate}
+                    onChange={setStartDate}
+                    slotProps={{ textField: { fullWidth: true } }}
+                  />
+                </LocalizationProvider>
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ptBR}>
+                  <DatePicker
+                    label="Data Final"
+                    value={endDate}
+                    onChange={setEndDate}
+                    slotProps={{ textField: { fullWidth: true } }}
+                  />
+                </LocalizationProvider>
+              </Grid>
             </Grid>
-            <Grid item xs={12} md={6}>
-              <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ptBR}>
-                <DatePicker
-                  label="Data Final"
-                  value={endDate}
-                  onChange={setEndDate}
-                  slotProps={{ textField: { fullWidth: true } }}
-                />
-              </LocalizationProvider>
-            </Grid>
-          </Grid>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </Collapse>
 
       {/* Tabela de Transações */}
       <Card>
-        <TableContainer>
+        <TableContainer sx={{ overflowX: 'auto' }}>
           <Table>
             <TableHead>
               <TableRow>
@@ -336,23 +342,14 @@ export default function Transactions() {
               {transactions.map((transaction) => {
                 const type = types.find((t) => t.value === transaction.type);
                 const status = statuses.find((s) => s.value === transaction.status);
-                const TypeIcon = type?.icon;
 
                 return (
                   <TableRow key={transaction.id}>
                     <TableCell>{transaction.description}</TableCell>
-                    <TableCell>
-                      <Box display="flex" alignItems="center" gap={1}>
-                        {TypeIcon && <TypeIcon color={type.color as any} />}
-                        <Typography
-                          color={transaction.type === 'receita' ? 'success.main' : 'error.main'}
-                        >
-                          {formatCurrency(transaction.amount)}
-                        </Typography>
-                      </Box>
-                    </TableCell>
+                    <TableCell>{formatCurrency(transaction.amount)}</TableCell>
                     <TableCell>
                       <Chip
+                        icon={type?.icon ? <type.icon /> : undefined}
                         label={type?.label}
                         color={type?.color as any}
                         size="small"
@@ -370,17 +367,16 @@ export default function Transactions() {
                     <TableCell align="right">
                       <IconButton
                         size="small"
-                        color="primary"
                         onClick={() => handleOpenEditDialog(transaction)}
+                        sx={{ mr: 1 }}
                       >
-                        <EditIcon />
+                        <EditIcon fontSize="small" />
                       </IconButton>
                       <IconButton
                         size="small"
-                        color="error"
                         onClick={() => handleOpenDeleteDialog(transaction)}
                       >
-                        <DeleteIcon />
+                        <DeleteIcon fontSize="small" />
                       </IconButton>
                     </TableCell>
                   </TableRow>
@@ -390,17 +386,15 @@ export default function Transactions() {
           </Table>
         </TableContainer>
         <TablePagination
+          rowsPerPageOptions={[5, 10, 25]}
           component="div"
           count={total}
+          rowsPerPage={rowsPerPage}
           page={page}
           onPageChange={handleChangePage}
-          rowsPerPage={rowsPerPage}
           onRowsPerPageChange={handleChangeRowsPerPage}
-          rowsPerPageOptions={[5, 10, 25]}
           labelRowsPerPage="Itens por página"
-          labelDisplayedRows={({ from, to, count }) =>
-            `${from}-${to} de ${count}`
-          }
+          labelDisplayedRows={({ from, to, count }) => `${from}-${to} de ${count}`}
         />
       </Card>
 

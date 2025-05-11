@@ -220,14 +220,19 @@ export default function Savings() {
   };
 
   return (
-    <Box p={3}>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4">Metas de Economia</Typography>
+    <Box p={{ xs: 2, md: 3 }}>
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3} flexDirection={{ xs: 'column', sm: 'row' }} gap={{ xs: 2, sm: 0 }}>
+        <Typography variant="h4" sx={{ fontSize: { xs: '1.5rem', md: '2rem' } }}>
+          Metas de Economia
+        </Typography>
         <Button
           variant="contained"
           color="primary"
           startIcon={<AddIcon />}
           onClick={handleOpenDialog}
+          sx={{ 
+            width: { xs: '100%', sm: 'auto' }
+          }}
         >
           Nova Meta
         </Button>
@@ -235,7 +240,7 @@ export default function Savings() {
 
       {/* Lista de Metas */}
       <Card>
-        <TableContainer>
+        <TableContainer sx={{ overflowX: 'auto' }}>
           <Table>
             <TableHead>
               <TableRow>
@@ -311,17 +316,15 @@ export default function Savings() {
           </Table>
         </TableContainer>
         <TablePagination
+          rowsPerPageOptions={[5, 10, 25]}
           component="div"
-          count={total}
+          count={savings.length}
+          rowsPerPage={rowsPerPage}
           page={page}
           onPageChange={handleChangePage}
-          rowsPerPage={rowsPerPage}
           onRowsPerPageChange={handleChangeRowsPerPage}
-          rowsPerPageOptions={[5, 10, 25]}
           labelRowsPerPage="Itens por página"
-          labelDisplayedRows={({ from, to, count }) =>
-            `${from}-${to} de ${count}`
-          }
+          labelDisplayedRows={({ from, to, count }) => `${from}-${to} de ${count}`}
         />
       </Card>
 

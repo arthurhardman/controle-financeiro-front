@@ -36,7 +36,7 @@ const menuItems = [
 
 const Navbar = () => {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
@@ -114,14 +114,14 @@ const Navbar = () => {
   return (
     <>
       <AppBar position="static" color="default" elevation={1}>
-        <Toolbar>
+        <Toolbar sx={{ px: { xs: 1, sm: 2, md: 3 } }}>
           {isMobile && (
             <IconButton
               color="inherit"
               aria-label="open drawer"
               edge="start"
               onClick={handleDrawerToggle}
-              sx={{ mr: 2 }}
+              sx={{ mr: 1 }}
             >
               <MenuIcon />
             </IconButton>
@@ -129,13 +129,20 @@ const Navbar = () => {
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <AccountBalanceWalletIcon color="primary" />
-            <Typography variant="h6" color="primary" sx={{ display: { xs: 'none', sm: 'block' } }}>
+            <Typography 
+              variant="h6" 
+              color="primary" 
+              sx={{ 
+                display: { xs: 'none', sm: 'block' },
+                fontSize: { xs: '1rem', sm: '1.25rem', md: '1.5rem' }
+              }}
+            >
               Controle Financeiro
             </Typography>
           </Box>
 
           {!isMobile && (
-            <Box sx={{ display: 'flex', gap: 2, ml: 4 }}>
+            <Box sx={{ display: 'flex', gap: { xs: 1, sm: 2 }, ml: { xs: 2, md: 4 } }}>
               {menuItems.map((item) => (
                 <Button
                   key={item.text}
@@ -144,6 +151,7 @@ const Navbar = () => {
                   color={location.pathname === item.path ? 'primary' : 'inherit'}
                   startIcon={item.icon}
                   sx={{
+                    fontSize: { xs: '0.875rem', sm: '1rem' },
                     '&.Mui-selected': {
                       bgcolor: 'primary.light',
                     },
@@ -166,12 +174,16 @@ const Navbar = () => {
                 aria-haspopup="true"
                 onClick={handleMenuOpen}
                 color="inherit"
+                sx={{ ml: { xs: 1, sm: 2 } }}
               >
                 {user.photo ? (
                   <Avatar 
                     src={getPhotoUrl(user.photo)} 
                     alt={user.name}
-                    sx={{ width: 32, height: 32 }}
+                    sx={{ 
+                      width: { xs: 28, sm: 32 }, 
+                      height: { xs: 28, sm: 32 } 
+                    }}
                   />
                 ) : (
                   <PersonIcon />
@@ -183,32 +195,42 @@ const Navbar = () => {
                 open={Boolean(anchorEl)}
                 onClose={handleMenuClose}
                 PaperProps={{
-                  sx: { mt: 1 },
+                  sx: { 
+                    mt: 1,
+                    minWidth: { xs: '200px', sm: '220px' }
+                  },
                 }}
               >
                 <MenuItem component={RouterLink} to="/profile" onClick={handleMenuClose}>
                   <ListItemIcon>
                     <PersonIcon fontSize="small" />
                   </ListItemIcon>
-                  Perfil
+                  <ListItemText primary="Perfil" />
                 </MenuItem>
                 <MenuItem component={RouterLink} to="/settings" onClick={handleMenuClose}>
                   <ListItemIcon>
                     <SettingsIcon fontSize="small" />
                   </ListItemIcon>
-                  Configurações
+                  <ListItemText primary="Configurações" />
                 </MenuItem>
                 <Divider />
                 <MenuItem onClick={handleLogout}>
                   <ListItemIcon>
                     <LogoutIcon fontSize="small" />
                   </ListItemIcon>
-                  Sair
+                  <ListItemText primary="Sair" />
                 </MenuItem>
               </Menu>
             </>
           ) : (
-            <Button color="inherit" component={RouterLink} to="/login">
+            <Button 
+              color="inherit" 
+              component={RouterLink} 
+              to="/login"
+              sx={{ 
+                fontSize: { xs: '0.875rem', sm: '1rem' }
+              }}
+            >
               Login
             </Button>
           )}
@@ -224,8 +246,12 @@ const Navbar = () => {
           keepMounted: true,
         }}
         sx={{
-          display: { xs: 'block', md: 'none' },
-          '& .MuiDrawer-paper': { boxSizing: 'border-box', width: 250 },
+          display: { xs: 'block', sm: 'none' },
+          '& .MuiDrawer-paper': { 
+            boxSizing: 'border-box', 
+            width: { xs: '100%', sm: 250 },
+            maxWidth: 250
+          },
         }}
       >
         {drawer}
