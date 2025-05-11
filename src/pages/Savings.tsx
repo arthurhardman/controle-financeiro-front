@@ -101,7 +101,6 @@ export default function Savings() {
   const [addAmountFormData, setAddAmountFormData] = useState<AddAmountFormData>(initialAddAmountFormData);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [total, setTotal] = useState(0);
 
   const fetchSavings = async () => {
     try {
@@ -110,7 +109,6 @@ export default function Savings() {
         limit: rowsPerPage,
       });
       setSavings(response.savings);
-      setTotal(response.total);
     } catch (err) {
       console.error('Erro ao carregar metas de economia:', err);
     }
