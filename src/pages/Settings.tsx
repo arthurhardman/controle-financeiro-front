@@ -8,9 +8,7 @@ import {
   FormControlLabel,
   Divider,
   Button,
-  Alert,
   CircularProgress,
-  Avatar,
 } from '@mui/material';
 import { authService } from '../services/api';
 import { useTheme } from '../contexts/ThemeContext';
@@ -19,18 +17,12 @@ export default function Settings() {
   const { darkMode, toggleDarkMode } = useTheme();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
   const [settings, setSettings] = useState({
     emailNotifications: true,
     monthlyReport: true,
     darkMode: false,
     language: 'pt-BR',
   });
-  const [user, setUser] = useState<any>(null);
-  const [photo, setPhoto] = useState<string | null>(null);
-  const [photoFile, setPhotoFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -40,9 +32,8 @@ export default function Settings() {
         if (userData.settings) {
           setSettings(userData.settings);
         }
-        setUser(userData);
       } catch (err: any) {
-        setError(err.response?.data?.error || 'Erro ao carregar configurações');
+        console.error('Erro ao carregar configurações:', err);
       } finally {
         setLoading(false);
       }
@@ -61,13 +52,10 @@ export default function Settings() {
   const handleSave = async () => {
     try {
       setSaving(true);
-      setError(null);
-      setSuccess(null);
 
       await authService.updateSettings(settings);
-      setSuccess('Configurações salvas com sucesso!');
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Erro ao salvar configurações');
+      console.error('Erro ao salvar configurações:', err);
     } finally {
       setSaving(false);
     }

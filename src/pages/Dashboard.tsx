@@ -6,15 +6,12 @@ import {
   Card,
   CardContent,
   CircularProgress,
-  LinearProgress,
-  Alert,
   Container,
 } from '@mui/material';
 import {
   TrendingUp as TrendingUpIcon,
   TrendingDown as TrendingDownIcon,
   AccountBalance as AccountBalanceIcon,
-  Info as InfoIcon,
 } from '@mui/icons-material';
 import {
   BarChart,
@@ -31,7 +28,7 @@ import {
   LineChart,
   Line,
 } from 'recharts';
-import { transactionService, savingService } from '../services/api';
+import { transactionService } from '../services/api';
 import { formatCurrency } from '../utils/formatters';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
@@ -93,7 +90,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 const RADIAN = Math.PI / 180;
-const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index }: any) => {
+const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
   const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
   const y = cy + radius * Math.sin(-midAngle * RADIAN);
@@ -108,15 +105,8 @@ const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, per
 export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [monthlyData, setMonthlyData] = useState<ChartData[]>([]);
   const [categoryData, setCategoryData] = useState<CategoryData[]>([]);
-  const [balanceData, setBalanceData] = useState<any[]>([]);
-  const [totalReceitas, setTotalReceitas] = useState(0);
-  const [totalDespesas, setTotalDespesas] = useState(0);
-  const [totalSaved, setTotalSaved] = useState(0);
-  const [totalTarget, setTotalTarget] = useState(0);
-  const [chartData, setChartData] = useState<ChartData[]>([]);
   const [stats, setStats] = useState<Stats>({
     totalIncome: 0,
     totalExpense: 0,
@@ -131,8 +121,6 @@ export default function Dashboard() {
       try {
         setLoading(true);
         setError(null);
-
-        console.log('Iniciando busca de dados...');
 
         // Buscar transações e estatísticas
         const [transactionsResponse, statsResponse] = await Promise.all([
@@ -157,39 +145,12 @@ export default function Dashboard() {
               monthlyBalance: 0
             };
 
-        console.log('Dados brutos:', {
-          transactions: transactions.map(t => ({
-            ...t,
-            date: new Date(t.date).toLocaleDateString('pt-BR')
-          })),
-          stats
-        });
-
         // Processa os dados para os gráficos
         const processedData = processMonthlyData(transactions);
         const processedCategoryData = processCategoryData(transactions);
-        const processedBalanceData = processBalanceData(transactions);
-
-        console.log('Dados processados:', {
-          monthlyData: processedData.map(d => ({
-            ...d,
-            income: formatCurrency(d.income),
-            expense: formatCurrency(d.expense),
-            balance: formatCurrency(d.balance)
-          })),
-          categoryData: processedCategoryData.map(d => ({
-            ...d,
-            value: formatCurrency(d.value)
-          })),
-          balanceData: processedBalanceData.map(d => ({
-            ...d,
-            balance: formatCurrency(d.balance)
-          }))
-        });
 
         setMonthlyData(processedData);
         setCategoryData(processedCategoryData);
-        setBalanceData(processedBalanceData);
         setStats({
           totalIncome: parseFloat(stats.totalIncome) || 0,
           totalExpense: parseFloat(stats.totalExpense) || 0,
@@ -200,27 +161,21 @@ export default function Dashboard() {
         });
         setLoading(false);
       } catch (error: any) {
-        console.error('Erro ao carregar dados:', error);
-        console.error('Detalhes do erro:', error.response?.data);
         setError(error.response?.data?.details || 'Erro ao carregar dados. Por favor, tente novamente.');
         setLoading(false);
       }
     };
 
-    // Usar um flag para evitar múltiplas chamadas
     let isMounted = true;
-
     if (isMounted) {
       fetchData();
     }
-
     return () => {
       isMounted = false;
     };
-  }, []); // Remover dependências desnecessárias
+  }, []);
 
   const processMonthlyData = (data: Transaction[]): ChartData[] => {
-    // Pega os últimos 6 meses
     const months: MonthData[] = [];
     const currentDate = new Date();
     for (let i = 5; i >= 0; i--) {
@@ -279,55 +234,6 @@ export default function Dashboard() {
       .sort((a, b) => b.value - a.value);
   };
 
-  const processBalanceData = (data: Transaction[]): any[] => {
-    if (data.length === 0) {
-      return [
-        { date: '01/01', balance: 0 },
-        { date: '01/02', balance: 0 },
-        { date: '01/03', balance: 0 },
-        { date: '01/04', balance: 0 },
-        { date: '01/05', balance: 0 },
-        { date: '01/06', balance: 0 },
-      ];
-    }
-
-    // Ordena as transações por data
-    const sortedTransactions = [...data].sort((a, b) => 
-      new Date(a.date).getTime() - new Date(b.date).getTime()
-    );
-
-    // Agrupa as transações por dia
-    const dailyBalances = sortedTransactions.reduce((acc: Record<string, number>, transaction) => {
-      const date = new Date(transaction.date).toLocaleDateString('pt-BR', { 
-        day: '2-digit', 
-        month: '2-digit' 
-      });
-      
-      if (!acc[date]) {
-        acc[date] = 0;
-      }
-      
-      acc[date] += transaction.type === 'receita' 
-        ? parseFloat(transaction.amount.toString()) 
-        : -parseFloat(transaction.amount.toString());
-      
-      return acc;
-    }, {});
-
-    // Converte para array e calcula o saldo acumulado
-    let balance = 0;
-    return Object.entries(dailyBalances)
-      .map(([date, amount]) => {
-        balance += amount;
-        return { date, balance };
-      })
-      .sort((a, b) => {
-        const [dayA, monthA] = a.date.split('/').map(Number);
-        const [dayB, monthB] = b.date.split('/').map(Number);
-        return monthA === monthB ? dayA - dayB : monthA - monthB;
-      });
-  };
-
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
@@ -339,12 +245,10 @@ export default function Dashboard() {
   if (error) {
     return (
       <Box p={3}>
-        <Alert severity="error">{error}</Alert>
+        <div>{error}</div>
       </Box>
     );
   }
-
-  console.log('Stats para os cards:', stats);
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
@@ -508,7 +412,7 @@ export default function Dashboard() {
                     fill="#8884d8"
                     dataKey="value"
                   >
-                    {categoryData.map((entry, index) => (
+                    {categoryData.map((_, index) => (
                       <Cell 
                         key={`cell-${index}`} 
                         fill={COLORS[index % COLORS.length]}

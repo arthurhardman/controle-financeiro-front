@@ -3,10 +3,8 @@ import {
   Box,
   Typography,
   Card,
-  CardContent,
   TextField,
   Button,
-  Grid,
   LinearProgress,
   IconButton,
   Dialog,
@@ -94,8 +92,6 @@ const initialAddAmountFormData: AddAmountFormData = {
 
 export default function Savings() {
   const [savings, setSavings] = useState<Saving[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [openDialog, setOpenDialog] = useState(false);
   const [openEditDialog, setOpenEditDialog] = useState(false);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
@@ -109,7 +105,6 @@ export default function Savings() {
 
   const fetchSavings = async () => {
     try {
-      setLoading(true);
       const response = await savingService.list({
         page: page + 1,
         limit: rowsPerPage,
@@ -117,10 +112,7 @@ export default function Savings() {
       setSavings(response.savings);
       setTotal(response.total);
     } catch (err) {
-      setError('Erro ao carregar metas de economia');
       console.error('Erro ao carregar metas de economia:', err);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -214,7 +206,7 @@ export default function Savings() {
     }
   };
 
-  const handleChangePage = (event: unknown, newPage: number) => {
+  const handleChangePage = (_event: unknown, newPage: number) => {
     setPage(newPage);
   };
 

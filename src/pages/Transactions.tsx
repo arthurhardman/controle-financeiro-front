@@ -96,8 +96,6 @@ const initialFormData: FormData = {
 
 export default function Transactions() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [openDialog, setOpenDialog] = useState(false);
   const [openEditDialog, setOpenEditDialog] = useState(false);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
@@ -115,7 +113,6 @@ export default function Transactions() {
 
   const fetchTransactions = async () => {
     try {
-      setLoading(true);
       const response = await transactionService.list({
         search: searchTerm,
         category: selectedCategory,
@@ -129,10 +126,7 @@ export default function Transactions() {
       setTransactions(response.transactions || []);
       setTotal(response.total || 0);
     } catch (err) {
-      setError('Erro ao carregar transações');
       console.error('Erro ao carregar transações:', err);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -206,7 +200,7 @@ export default function Transactions() {
     }
   };
 
-  const handleChangePage = (event: unknown, newPage: number) => {
+  const handleChangePage = (_event: unknown, newPage: number) => {
     setPage(newPage);
   };
 
