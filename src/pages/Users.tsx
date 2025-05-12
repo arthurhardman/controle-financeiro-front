@@ -3,7 +3,7 @@ import { userService } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
 import {
-  Box, Typography, Card, CardContent, Grid, CircularProgress, Alert, Button, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, Avatar
+  Box, Typography, Card, CardContent, Grid, CircularProgress, Alert, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, Avatar
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import { format } from 'date-fns';
