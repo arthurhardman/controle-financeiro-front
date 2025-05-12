@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { toast } from 'react-toastify';
 
 const API_URL = import.meta.env['VITE_API_URL'] || 'http://localhost:3001/api';
 console.log('API_URL em produção:', API_URL);
@@ -20,7 +21,7 @@ api.interceptors.request.use(config => {
   return config;
 });
 
-// Interceptor para tratar erros
+// Interceptor para tratar erros e loading
 api.interceptors.response.use(
   response => response,
   error => {
@@ -28,6 +29,11 @@ api.interceptors.response.use(
       localStorage.removeItem('token');
       window.location.href = '/login';
     }
+
+    // Tratamento de erros
+    const errorMessage = error.response?.data?.message || error.message || 'Ocorreu um erro na requisição';
+    toast.error(errorMessage);
+
     return Promise.reject(error);
   }
 );
