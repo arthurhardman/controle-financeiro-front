@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import React from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   AppBar,
   Toolbar,
@@ -18,70 +19,79 @@ import {
   ListItemText,
   Divider,
 } from '@mui/material';
-import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
-import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
-import SavingsIcon from '@mui/icons-material/Savings';
-import ReceiptIcon from '@mui/icons-material/Receipt';
-import MenuIcon from '@mui/icons-material/Menu';
-import PersonIcon from '@mui/icons-material/Person';
-import LogoutIcon from '@mui/icons-material/Logout';
-import SettingsIcon from '@mui/icons-material/Settings';
+import {
+  Menu as MenuIcon,
+  Dashboard as DashboardIcon,
+  AccountBalance as AccountBalanceIcon,
+  Savings as SavingsIcon,
+  Person as PersonIcon,
+  Logout as LogoutIcon,
+} from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 
 const menuItems = [
-  { text: 'Dashboard', icon: <AccountBalanceWalletIcon />, path: '/' },
-  { text: 'Transações', icon: <ReceiptIcon />, path: '/transactions' },
-  { text: 'Economias', icon: <SavingsIcon />, path: '/savings' },
+  { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
+  { text: 'Transações', icon: <AccountBalanceIcon />, path: '/transactions' },
+  { text: 'Poupanças', icon: <SavingsIcon />, path: '/savings' },
 ];
 
-const Navbar = () => {
+export default function Navbar() {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const location = useLocation();
-  const navigate = useNavigate();
-  const { user, logout } = useAuth();
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
-  useEffect(() => {
-    if (user) {
-      console.log('Usuário no Navbar:', user);
-      console.log('Foto do usuário:', user.photo);
-    }
-  }, [user]);
+  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+  const [mobileOpen, setMobileOpen] = React.useState(false);
+
+  const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleLogout = () => {
+    handleClose();
+    logout();
+    navigate('/login');
+  };
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
 
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleLogout = () => {
-    handleMenuClose();
-    logout();
-    navigate('/login');
-  };
-
-  const getPhotoUrl = (photo: string) => {
-    if (photo.startsWith('http')) {
-      return photo;
+  const handleNavigation = (path: string) => {
+    navigate(path);
+    if (isMobile) {
+      setMobileOpen(false);
     }
-    return `http://localhost:3001${photo}`;
   };
 
   const drawer = (
     <Box sx={{ width: 250 }}>
-      <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-        <AccountBalanceWalletIcon color="primary" />
-        <Typography variant="h6" color="primary">
-          Controle Financeiro
-        </Typography>
+      <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
+        <Avatar
+          src={user?.photo}
+          alt={user?.name}
+          sx={{ 
+            width: 40, 
+            height: 40,
+            border: '2px solid',
+            borderColor: 'primary.main',
+            boxShadow: '0 2px 8px rgba(37,99,235,0.15)',
+          }}
+        />
+        <Box>
+          <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+            {user?.name}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {user?.email}
+          </Typography>
+        </Box>
       </Box>
       <Divider />
       <List>
@@ -89,71 +99,111 @@ const Navbar = () => {
           <ListItem
             button
             key={item.text}
-            component={RouterLink}
-            to={item.path}
+            onClick={() => handleNavigation(item.path)}
             selected={location.pathname === item.path}
-            onClick={handleDrawerToggle}
             sx={{
+              borderRadius: 2,
+              mx: 1,
+              my: 0.5,
               '&.Mui-selected': {
-                bgcolor: 'primary.light',
-                color: 'primary.main',
+                backgroundColor: 'rgba(37,99,235,0.08)',
                 '&:hover': {
-                  bgcolor: 'primary.light',
+                  backgroundColor: 'rgba(37,99,235,0.12)',
                 },
+              },
+              '&:hover': {
+                backgroundColor: 'rgba(37,99,235,0.04)',
               },
             }}
           >
-            <ListItemIcon sx={{ color: 'inherit' }}>{item.icon}</ListItemIcon>
-            <ListItemText primary={item.text} />
+            <ListItemIcon sx={{ minWidth: 40, color: location.pathname === item.path ? 'primary.main' : 'inherit' }}>
+              {item.icon}
+            </ListItemIcon>
+            <ListItemText 
+              primary={item.text} 
+              primaryTypographyProps={{ 
+                fontWeight: location.pathname === item.path ? 600 : 400,
+                color: location.pathname === item.path ? 'primary.main' : 'inherit',
+              }}
+            />
           </ListItem>
         ))}
+        <ListItem
+          button
+          onClick={handleLogout}
+          sx={{
+            borderRadius: 2,
+            mx: 1,
+            my: 0.5,
+            color: 'error.main',
+            '&:hover': {
+              backgroundColor: 'rgba(220,38,38,0.04)',
+            },
+          }}
+        >
+          <ListItemIcon sx={{ minWidth: 40, color: 'error.main' }}>
+            <LogoutIcon />
+          </ListItemIcon>
+          <ListItemText 
+            primary="Sair" 
+            primaryTypographyProps={{ 
+              fontWeight: 600,
+              color: 'error.main',
+            }}
+          />
+        </ListItem>
       </List>
     </Box>
   );
 
   return (
     <>
-      <AppBar position="static" color="default" elevation={1}>
-        <Toolbar sx={{ px: { xs: 1, sm: 2, md: 3 } }}>
+      <AppBar 
+        position="fixed" 
+        sx={{ 
+          backgroundColor: 'white',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+        }}
+      >
+        <Toolbar>
           {isMobile && (
             <IconButton
-              color="inherit"
+              color="primary"
               aria-label="open drawer"
               edge="start"
               onClick={handleDrawerToggle}
-              sx={{ mr: 1 }}
+              sx={{ mr: 2 }}
             >
               <MenuIcon />
             </IconButton>
           )}
-
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <AccountBalanceWalletIcon color="primary" />
-            <Typography 
-              variant="h6" 
-              color="primary" 
-              sx={{ 
-                display: { xs: 'none', sm: 'block' },
-                fontSize: { xs: '1rem', sm: '1.25rem', md: '1.5rem' }
-              }}
-            >
-              Controle Financeiro
-            </Typography>
-          </Box>
-
+          <Typography 
+            variant="h6" 
+            component="div" 
+            sx={{ 
+              flexGrow: 1,
+              fontWeight: 700,
+              letterSpacing: 1,
+              color: 'primary.main',
+            }}
+          >
+            Controle Financeiro
+          </Typography>
           {!isMobile && (
-            <Box sx={{ display: 'flex', gap: { xs: 1, sm: 2 }, ml: { xs: 2, md: 4 } }}>
+            <Box sx={{ display: 'flex', gap: 1 }}>
               {menuItems.map((item) => (
                 <Button
                   key={item.text}
-                  component={RouterLink}
-                  to={item.path}
-                  color={location.pathname === item.path ? 'primary' : 'inherit'}
+                  color="primary"
                   startIcon={item.icon}
+                  onClick={() => handleNavigation(item.path)}
                   sx={{
-                    fontSize: { xs: '0.875rem', sm: '1rem' },
-                    '&.Mui-selected': {
-                      bgcolor: 'primary.light',
+                    borderRadius: 2,
+                    px: 2,
+                    fontWeight: location.pathname === item.path ? 600 : 400,
+                    backgroundColor: location.pathname === item.path ? 'rgba(37,99,235,0.08)' : 'transparent',
+                    '&:hover': {
+                      backgroundColor: 'rgba(37,99,235,0.12)',
                     },
                   }}
                 >
@@ -162,102 +212,118 @@ const Navbar = () => {
               ))}
             </Box>
           )}
-
-          <Box sx={{ flexGrow: 1 }} />
-
-          {user ? (
-            <>
-              <IconButton
-                size="large"
-                aria-label="account of current user"
-                aria-controls="menu-appbar"
-                aria-haspopup="true"
-                onClick={handleMenuOpen}
-                color="inherit"
-                sx={{ ml: { xs: 1, sm: 2 } }}
-              >
-                {user.photo ? (
-                  <Avatar 
-                    src={getPhotoUrl(user.photo)} 
-                    alt={user.name}
-                    sx={{ 
-                      width: { xs: 28, sm: 32 }, 
-                      height: { xs: 28, sm: 32 } 
-                    }}
-                  />
-                ) : (
-                  <PersonIcon />
-                )}
-              </IconButton>
-              <Menu
-                id="menu-appbar"
-                anchorEl={anchorEl}
-                open={Boolean(anchorEl)}
-                onClose={handleMenuClose}
-                PaperProps={{
-                  sx: { 
-                    mt: 1,
-                    minWidth: { xs: '200px', sm: '220px' }
+          <Box sx={{ ml: 2 }}>
+            <IconButton
+              size="small"
+              onClick={handleMenu}
+              sx={{ 
+                p: 0.5,
+                '&:hover': {
+                  backgroundColor: 'rgba(255,255,255,0.1)',
+                },
+              }}
+            >
+              <Avatar
+                src={user?.photo}
+                alt={user?.name}
+                sx={{ 
+                  width: 32, 
+                  height: 32,
+                  border: '2px solid',
+                  borderColor: 'white',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                }}
+              />
+            </IconButton>
+            <Menu
+              anchorEl={anchorEl}
+              open={Boolean(anchorEl)}
+              onClose={handleClose}
+              PaperProps={{
+                sx: {
+                  mt: 1,
+                  borderRadius: 3,
+                  boxShadow: '0 4px 24px rgba(37,99,235,0.15)',
+                },
+              }}
+            >
+              <Box sx={{ px: 2, py: 1 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                  {user?.name}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {user?.email}
+                </Typography>
+              </Box>
+              <Divider />
+              <MenuItem 
+                onClick={() => {
+                  handleClose();
+                  handleNavigation('/profile');
+                }}
+                sx={{ 
+                  borderRadius: 1,
+                  mx: 1,
+                  my: 0.5,
+                  '&:hover': {
+                    backgroundColor: 'rgba(37,99,235,0.04)',
                   },
                 }}
               >
-                <MenuItem component={RouterLink} to="/profile" onClick={handleMenuClose}>
-                  <ListItemIcon>
-                    <PersonIcon fontSize="small" />
-                  </ListItemIcon>
-                  <ListItemText primary="Perfil" />
-                </MenuItem>
-                <MenuItem component={RouterLink} to="/settings" onClick={handleMenuClose}>
-                  <ListItemIcon>
-                    <SettingsIcon fontSize="small" />
-                  </ListItemIcon>
-                  <ListItemText primary="Configurações" />
-                </MenuItem>
-                <Divider />
-                <MenuItem onClick={handleLogout}>
-                  <ListItemIcon>
-                    <LogoutIcon fontSize="small" />
-                  </ListItemIcon>
-                  <ListItemText primary="Sair" />
-                </MenuItem>
-              </Menu>
-            </>
-          ) : (
-            <Button 
-              color="inherit" 
-              component={RouterLink} 
-              to="/login"
-              sx={{ 
-                fontSize: { xs: '0.875rem', sm: '1rem' }
-              }}
-            >
-              Login
-            </Button>
-          )}
+                <ListItemIcon sx={{ minWidth: 40 }}>
+                  <PersonIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText primary="Perfil" />
+              </MenuItem>
+              <MenuItem 
+                onClick={handleLogout}
+                sx={{ 
+                  borderRadius: 1,
+                  mx: 1,
+                  my: 0.5,
+                  color: 'error.main',
+                  '&:hover': {
+                    backgroundColor: 'rgba(220,38,38,0.04)',
+                  },
+                }}
+              >
+                <ListItemIcon sx={{ minWidth: 40, color: 'error.main' }}>
+                  <LogoutIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText 
+                  primary="Sair" 
+                  primaryTypographyProps={{ 
+                    fontWeight: 600,
+                    color: 'error.main',
+                  }}
+                />
+              </MenuItem>
+            </Menu>
+          </Box>
         </Toolbar>
       </AppBar>
-
-      <Drawer
-        variant="temporary"
-        anchor="left"
-        open={mobileOpen}
-        onClose={handleDrawerToggle}
-        ModalProps={{
-          keepMounted: true,
-        }}
-        sx={{
-          display: { xs: 'block', sm: 'none' },
-          '& .MuiDrawer-paper': { 
-            boxSizing: 'border-box', 
-            width: { xs: '100%', sm: 250 },
-            maxWidth: 250
-          },
-        }}
-      >
-        {drawer}
-      </Drawer>
+      <Box component="nav">
+        <Drawer
+          variant="temporary"
+          open={mobileOpen}
+          onClose={handleDrawerToggle}
+          ModalProps={{
+            keepMounted: true,
+          }}
+          sx={{
+            display: { xs: 'block', sm: 'none' },
+            '& .MuiDrawer-paper': { 
+              boxSizing: 'border-box', 
+              width: 250,
+              border: 'none',
+              boxShadow: '0 4px 24px rgba(37,99,235,0.15)',
+            },
+          }}
+        >
+          {drawer}
+        </Drawer>
+      </Box>
+      <Toolbar />
     </>
   );
-};
-
-export default Navbar; 
+} 

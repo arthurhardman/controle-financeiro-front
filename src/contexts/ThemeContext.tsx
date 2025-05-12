@@ -27,7 +27,7 @@ function ThemeProvider({ children }: { children: React.ReactNode }) {
   // Inicializa o tema com o valor do localStorage
   const [darkMode, setDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
-      const savedTheme = localStorage.getItem('darkMode');
+      const savedTheme = localStorage.getItem('theme');
       console.log('Tema carregado do localStorage:', savedTheme);
       return savedTheme ? JSON.parse(savedTheme) : false;
     }
@@ -37,59 +37,45 @@ function ThemeProvider({ children }: { children: React.ReactNode }) {
   // Sincroniza o tema com o localStorage
   useEffect(() => {
     console.log('Salvando tema no localStorage:', darkMode);
-    localStorage.setItem('darkMode', JSON.stringify(darkMode));
+    localStorage.setItem('theme', JSON.stringify(darkMode));
   }, [darkMode]);
 
   // Tenta sincronizar com as configurações do usuário em segundo plano
   useEffect(() => {
-    const syncWithUserSettings = async () => {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        // Não tente sincronizar se não estiver autenticado
-        return;
-      }
+    const checkUserSettings = async () => {
       try {
         const userData = await authService.getProfile();
-        console.log('Configurações do usuário:', userData.settings);
-        
-        // Só atualiza as configurações do usuário se o localStorage estiver vazio
-        const savedTheme = localStorage.getItem('darkMode');
-        if (!savedTheme && userData.settings?.darkMode !== undefined) {
-          console.log('Usando tema das configurações do usuário:', userData.settings.darkMode);
+        if (userData.settings) {
           setDarkMode(userData.settings.darkMode);
         } else {
-          // Se temos um tema no localStorage, atualiza as configurações do usuário
-          console.log('Atualizando configurações do usuário com tema do localStorage:', darkMode);
-          await authService.updateSettings({
-            emailNotifications: true,
-            monthlyReport: true,
-            darkMode: darkMode,
-            language: 'pt-BR',
-          });
+          const savedTheme = localStorage.getItem('theme');
+          if (savedTheme) {
+            await authService.updateSettings({ ...userData.settings, darkMode: savedTheme === 'dark' });
+          }
         }
       } catch (error) {
-        console.error('Erro ao sincronizar tema com configurações do usuário:', error);
+        // Fallback para o tema do localStorage
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme) {
+          setDarkMode(savedTheme === 'dark');
+        }
       }
     };
 
-    syncWithUserSettings();
+    checkUserSettings();
   }, []);
 
-  const toggleDarkMode = async () => {
+  const toggleTheme = async () => {
     const newDarkMode = !darkMode;
-    console.log('Alternando tema para:', newDarkMode);
     setDarkMode(newDarkMode);
 
     try {
-      await authService.updateSettings({
-        emailNotifications: true,
-        monthlyReport: true,
-        darkMode: newDarkMode,
-        language: 'pt-BR',
-      });
-      console.log('Tema atualizado nas configurações do usuário');
+      const userData = await authService.getProfile();
+      if (userData.settings) {
+        await authService.updateSettings({ ...userData.settings, darkMode: newDarkMode });
+      }
     } catch (error) {
-      console.error('Erro ao atualizar tema nas configurações:', error);
+      // Se houver erro ao atualizar as configurações, mantém o tema local
     }
   };
 
@@ -188,7 +174,7 @@ function ThemeProvider({ children }: { children: React.ReactNode }) {
   });
 
   return (
-    <ThemeContext.Provider value={{ darkMode, toggleDarkMode }}>
+    <ThemeContext.Provider value={{ darkMode, toggleDarkMode: toggleTheme }}>
       <MuiThemeProvider theme={theme}>
         <CssBaseline />
         {children}

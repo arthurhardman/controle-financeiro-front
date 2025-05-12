@@ -1,27 +1,28 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import {
+  Container,
   Box,
-  Paper,
   Typography,
   TextField,
-  Container,
-  Alert,
+  Button,
+  Link,
+  Paper,
+  Fade,
 } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
 import { useLoading } from '../contexts/LoadingContext';
-import { LoadingButton } from '../components/LoadingButton';
+import { useNotification } from '../contexts/NotificationContext';
 
-const Login: React.FC = () => {
+export default function Login() {
   const navigate = useNavigate();
   const { login } = useAuth();
   const { setLoading } = useLoading();
+  const { showError, showSuccess } = useNotification();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
-  const [error, setError] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -33,51 +34,39 @@ const Login: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    setIsSubmitting(true);
+    setLoading(true);
 
     try {
-      setLoading(true);
       await login(formData.email, formData.password);
+      showSuccess('Login realizado com sucesso!');
       navigate('/');
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Erro ao fazer login');
+    } catch (error) {
+      showError('Erro ao fazer login. Verifique suas credenciais.');
     } finally {
       setLoading(false);
-      setIsSubmitting(false);
     }
   };
 
   return (
-    <Container component="main" maxWidth="xs">
-      <Box
-        sx={{
-          marginTop: 8,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-        }}
-      >
+    <Container component="main" maxWidth="sm" sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <Fade in timeout={700}>
         <Paper
-          elevation={3}
+          elevation={8}
           sx={{
-            padding: 4,
+            padding: { xs: 3, sm: 5 },
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
             width: '100%',
+            maxWidth: 420,
+            borderRadius: 5,
+            boxShadow: '0 8px 32px rgba(37,99,235,0.10)',
+            background: 'linear-gradient(135deg, #F3F4F6 60%, #DBEAFE 100%)',
           }}
         >
-          <Typography component="h1" variant="h5">
+          <Typography component="h1" variant="h4" sx={{ fontWeight: 700, mb: 2, color: 'primary.main', letterSpacing: 1 }}>
             Login
           </Typography>
-
-          {error && (
-            <Alert severity="error" sx={{ mt: 2, width: '100%' }}>
-              {error}
-            </Alert>
-          )}
-
           <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1, width: '100%' }}>
             <TextField
               margin="normal"
@@ -90,6 +79,7 @@ const Login: React.FC = () => {
               autoFocus
               value={formData.email}
               onChange={handleChange}
+              sx={{ borderRadius: 3, mb: 2 }}
             />
             <TextField
               margin="normal"
@@ -102,30 +92,25 @@ const Login: React.FC = () => {
               autoComplete="current-password"
               value={formData.password}
               onChange={handleChange}
+              sx={{ borderRadius: 3, mb: 2 }}
             />
-            <LoadingButton
+            <Button
               type="submit"
               fullWidth
               variant="contained"
-              sx={{ mt: 3, mb: 2 }}
-              loading={isSubmitting}
-              loadingText="Entrando..."
+              size="large"
+              sx={{ mt: 3, mb: 2, borderRadius: 3, fontWeight: 700, fontSize: 18, boxShadow: '0 2px 8px rgba(37,99,235,0.10)' }}
             >
               Entrar
-            </LoadingButton>
-            <Box sx={{ textAlign: 'center' }}>
-              <LoadingButton
-                onClick={() => navigate('/register')}
-                sx={{ textTransform: 'none' }}
-              >
+            </Button>
+            <Box sx={{ textAlign: 'center', mt: 2 }}>
+              <Link component={RouterLink} to="/register" variant="body2" sx={{ color: 'primary.main', fontWeight: 600 }}>
                 Não tem uma conta? Cadastre-se
-              </LoadingButton>
+              </Link>
             </Box>
           </Box>
         </Paper>
-      </Box>
+      </Fade>
     </Container>
   );
-};
-
-export default Login; 
+} 

@@ -1,26 +1,25 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
+  Container,
   Box,
   Typography,
-  Card,
-  CardContent,
   TextField,
   Button,
-  Grid,
+  Paper,
   Avatar,
   IconButton,
-  Alert
+  Fade,
 } from '@mui/material';
-import { PhotoCamera as PhotoCameraIcon } from '@mui/icons-material';
-import { authService } from '../services/api';
+import { PhotoCamera } from '@mui/icons-material';
+import { useAuth } from '../contexts/AuthContext';
 import { useLoading } from '../contexts/LoadingContext';
+import { useNotification } from '../contexts/NotificationContext';
+import { authService } from '../services/api';
 
 export default function Profile() {
+  const { user, setUser } = useAuth();
   const { setLoading } = useLoading();
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
-  const [user, setUser] = useState<any>(null);
+  const { showError, showSuccess } = useNotification();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -28,32 +27,16 @@ export default function Profile() {
     newPassword: '',
     confirmPassword: '',
   });
-  const [photo, setPhoto] = useState<string | null>(null);
-  const [photoFile, setPhotoFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        setLoading(true);
-        const userData = await authService.getProfile();
-        setUser(userData);
-        setFormData(prev => ({
-          ...prev,
-          name: userData.name,
-          email: userData.email,
-        }));
-        setPhoto(userData.photo ? `http://localhost:3001${userData.photo}` : null);
-      } catch (err) {
-        setError('Erro ao carregar dados do perfil');
-        console.error('Erro ao carregar perfil:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUserData();
-  }, []);
+    if (user) {
+      setFormData(prev => ({
+        ...prev,
+        name: user.name,
+        email: user.email,
+      }));
+    }
+  }, [user]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -63,20 +46,36 @@ export default function Profile() {
     }));
   };
 
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setLoading(true);
+    try {
+      const response = await authService.uploadPhoto(file);
+      setUser(response.user);
+      showSuccess('Foto atualizada com sucesso!');
+    } catch (error) {
+      showError('Erro ao atualizar foto. Tente novamente.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setSuccess(null);
 
     if (formData.newPassword && formData.newPassword !== formData.confirmPassword) {
-      setError('As senhas não coincidem');
+      showError('As senhas não coincidem');
       return;
     }
 
+    setLoading(true);
+
     try {
-      setSaving(true);
       const data: any = {
         name: formData.name,
+        email: formData.email,
       };
 
       if (formData.currentPassword && formData.newPassword) {
@@ -84,38 +83,32 @@ export default function Profile() {
         data.newPassword = formData.newPassword;
       }
 
-      await authService.updateProfile(data);
-      setSuccess('Perfil atualizado com sucesso!');
+      const response = await authService.updateProfile(data);
+      setUser(response.user);
+      showSuccess('Perfil atualizado com sucesso!');
       setFormData(prev => ({
         ...prev,
         currentPassword: '',
         newPassword: '',
         confirmPassword: '',
       }));
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Erro ao atualizar perfil');
+    } catch (error) {
+      showError('Erro ao atualizar perfil. Tente novamente.');
     } finally {
-      setSaving(false);
-    }
-  };
-
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setPhotoFile(e.target.files[0]);
-      setPhoto(URL.createObjectURL(e.target.files[0]));
+      setLoading(false);
     }
   };
 
   return (
-    <Box p={{ xs: 2, md: 3 }}>
-      <Typography variant="h4" sx={{ mb: 4 }}>
-        Perfil
-      </Typography>
-
-      <Grid container spacing={3}>
-        <Grid item xs={12} md={4}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
+    <Container maxWidth="sm" sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <Fade in timeout={700}>
+        <Paper elevation={8} sx={{ p: { xs: 3, sm: 5 }, borderRadius: 5, boxShadow: '0 8px 32px rgba(37,99,235,0.10)', background: 'linear-gradient(135deg, #F3F4F6 60%, #DBEAFE 100%)', width: '100%', maxWidth: 500, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 3 }}>
+            <Box sx={{ position: 'relative', mb: 1 }}>
+              <Avatar
+                src={user?.photoUrl}
+                sx={{ width: 110, height: 110, mb: 1, border: '4px solid #2563EB', boxShadow: '0 2px 12px rgba(37,99,235,0.10)' }}
+              />
               <input
                 accept="image/*"
                 style={{ display: 'none' }}
@@ -125,166 +118,96 @@ export default function Profile() {
               />
               <label htmlFor="photo-upload">
                 <IconButton
+                  color="primary"
                   component="span"
-                  sx={{ position: 'relative', mb: 2 }}
+                  sx={{
+                    position: 'absolute',
+                    bottom: 0,
+                    right: 0,
+                    bgcolor: 'background.paper',
+                    border: '2px solid #2563EB',
+                    boxShadow: 2,
+                  }}
                 >
-                  <Avatar
-                    src={photo || undefined}
-                    sx={{ width: 120, height: 120 }}
-                  />
-                  <Box
-                    sx={{
-                      position: 'absolute',
-                      bottom: 0,
-                      right: 0,
-                      backgroundColor: 'primary.main',
-                      borderRadius: '50%',
-                      p: 0.5,
-                    }}
-                  >
-                    <PhotoCameraIcon sx={{ color: 'white' }} />
-                  </Box>
+                  <PhotoCamera fontSize="medium" />
                 </IconButton>
               </label>
-              {photoFile && (
-                <Box mt={2}>
-                  <Button
-                    variant="contained"
-                    color="secondary"
-                    disabled={uploading}
-                    onClick={async () => {
-                      if (!photoFile) return;
-                      setUploading(true);
-                      const formData = new FormData();
-                      formData.append('photo', photoFile);
-                      try {
-                        const res = await fetch('http://localhost:3001/api/auth/photo', {
-                          method: 'POST',
-                          headers: {
-                            Authorization: `Bearer ${localStorage.getItem('token')}`,
-                          },
-                          body: formData,
-                        });
-                        const data = await res.json();
-                        if (data.photo) {
-                          setPhoto(`http://localhost:3001${data.photo}`);
-                          setSuccess('Foto atualizada com sucesso!');
-                          await authService.updateProfile({ photo: data.photo });
-                          setUser((prev: any) => ({ ...prev, photo: data.photo }));
-                          setPhotoFile(null);
-                        }
-                      } catch (err) {
-                        setError('Erro ao enviar foto');
-                      } finally {
-                        setUploading(false);
-                      }
-                    }}
-                  >
-                    {uploading ? 'Enviando...' : 'Salvar Foto'}
-                  </Button>
-                </Box>
-              )}
-              <Typography variant="h6" mt={2}>
-                {user?.name}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {user?.email}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
+            </Box>
+            <Typography variant="h4" component="h1" sx={{ fontWeight: 700, color: 'primary.main', letterSpacing: 1 }} gutterBottom>
+              Perfil
+            </Typography>
+          </Box>
 
-        <Grid item xs={12} md={8}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" sx={{ mb: 3 }}>
-                Informações Pessoais
-              </Typography>
+          <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%' }}>
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              label="Nome"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              sx={{ borderRadius: 3, mb: 2 }}
+            />
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              label="Email"
+              name="email"
+              type="email"
+              value={formData.email}
+              onChange={handleChange}
+              sx={{ borderRadius: 3, mb: 2 }}
+            />
 
-              {error && (
-                <Alert severity="error" sx={{ mb: 2 }}>
-                  {error}
-                </Alert>
-              )}
+            <Typography variant="h6" sx={{ mt: 4, mb: 2, fontWeight: 600, color: 'primary.main' }}>
+              Alterar Senha
+            </Typography>
 
-              {success && (
-                <Alert severity="success" sx={{ mb: 2 }}>
-                  {success}
-                </Alert>
-              )}
+            <TextField
+              margin="normal"
+              fullWidth
+              label="Senha Atual"
+              name="currentPassword"
+              type="password"
+              value={formData.currentPassword}
+              onChange={handleChange}
+              sx={{ borderRadius: 3, mb: 2 }}
+            />
+            <TextField
+              margin="normal"
+              fullWidth
+              label="Nova Senha"
+              name="newPassword"
+              type="password"
+              value={formData.newPassword}
+              onChange={handleChange}
+              sx={{ borderRadius: 3, mb: 2 }}
+            />
+            <TextField
+              margin="normal"
+              fullWidth
+              label="Confirmar Nova Senha"
+              name="confirmPassword"
+              type="password"
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              sx={{ borderRadius: 3, mb: 2 }}
+            />
 
-              <Box component="form" onSubmit={handleSubmit}>
-                <Grid container spacing={2}>
-                  <Grid item xs={12}>
-                    <TextField
-                      fullWidth
-                      label="Nome"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleChange}
-                      required
-                    />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <TextField
-                      fullWidth
-                      label="Email"
-                      name="email"
-                      value={formData.email}
-                      disabled
-                    />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <Typography variant="subtitle1" sx={{ mb: 1 }}>
-                      Alterar Senha
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={12}>
-                    <TextField
-                      fullWidth
-                      label="Senha Atual"
-                      name="currentPassword"
-                      type="password"
-                      value={formData.currentPassword}
-                      onChange={handleChange}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      fullWidth
-                      label="Nova Senha"
-                      name="newPassword"
-                      type="password"
-                      value={formData.newPassword}
-                      onChange={handleChange}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      fullWidth
-                      label="Confirmar Nova Senha"
-                      name="confirmPassword"
-                      type="password"
-                      value={formData.confirmPassword}
-                      onChange={handleChange}
-                    />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <Button
-                      type="submit"
-                      variant="contained"
-                      color="primary"
-                      disabled={saving}
-                    >
-                      {saving ? 'Salvando...' : 'Salvar Alterações'}
-                    </Button>
-                  </Grid>
-                </Grid>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-    </Box>
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+              size="large"
+              sx={{ mt: 3, borderRadius: 3, fontWeight: 700, fontSize: 18, boxShadow: '0 2px 8px rgba(37,99,235,0.10)' }}
+            >
+              Salvar Alterações
+            </Button>
+          </Box>
+        </Paper>
+      </Fade>
+    </Container>
   );
 } 

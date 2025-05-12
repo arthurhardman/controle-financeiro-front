@@ -1,8 +1,6 @@
 import axios from 'axios';
-import { toast } from 'react-toastify';
 
 const API_URL = import.meta.env['VITE_API_URL'] || 'http://localhost:3001/api';
-console.log('API_URL em produção:', API_URL);
 
 const api = axios.create({
   baseURL: API_URL,
@@ -21,19 +19,18 @@ api.interceptors.request.use(config => {
   return config;
 });
 
-// Interceptor para tratar erros e loading
+// Interceptor para tratamento de erros
 api.interceptors.response.use(
   response => response,
   error => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      window.location.href = '/login';
+    if (error.response) {
+      switch (error.response.status) {
+        case 401:
+          localStorage.removeItem('token');
+          window.location.href = '/login';
+          break;
+      }
     }
-
-    // Tratamento de erros
-    const errorMessage = error.response?.data?.message || error.message || 'Ocorreu um erro na requisição';
-    toast.error(errorMessage);
-
     return Promise.reject(error);
   }
 );
@@ -70,6 +67,16 @@ export const authService = {
     const response = await api.put('/auth/settings', settings);
     return response.data;
   },
+  uploadPhoto: async (file: File) => {
+    const formData = new FormData();
+    formData.append('photo', file);
+    const response = await api.post('/auth/upload-photo', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
 };
 
 // Serviço de transações
@@ -84,18 +91,30 @@ export const transactionService = {
     page?: number;
     limit?: number;
   }) => {
-    const response = await api.get('/transactions', { params });
-    return response.data;
+    try {
+      const response = await api.get('/transactions', { params });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   },
 
-  getTransactions: async () => {
-    const response = await api.get('/transactions');
-    return response.data;
+  getAll: async () => {
+    try {
+      const response = await api.get('/transactions');
+      return response.data.transactions || [];
+    } catch (error) {
+      throw error;
+    }
   },
 
   getStats: async () => {
-    const response = await api.get('/transactions/stats');
-    return response.data;
+    try {
+      const response = await api.get('/transactions/stats');
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   },
 
   create: async (data: {
@@ -125,7 +144,8 @@ export const transactionService = {
   },
 
   delete: async (id: number) => {
-    await api.delete(`/transactions/${id}`);
+    const response = await api.delete(`/transactions/${id}`);
+    return response.data;
   },
 };
 
@@ -139,6 +159,11 @@ export const savingService = {
   }) => {
     const response = await api.get('/savings', { params });
     return response.data;
+  },
+
+  getAll: async () => {
+    const response = await api.get('/savings');
+    return response.data.savings;
   },
 
   create: async (data: {
@@ -166,7 +191,8 @@ export const savingService = {
   },
 
   delete: async (id: number) => {
-    await api.delete(`/savings/${id}`);
+    const response = await api.delete(`/savings/${id}`);
+    return response.data;
   },
 
   addAmount: async (id: number, amount: number) => {
@@ -180,4 +206,4 @@ export const savingService = {
   },
 };
 
-export default api; 
+export default api;

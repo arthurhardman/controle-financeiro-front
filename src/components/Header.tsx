@@ -52,6 +52,10 @@ export function Header() {
     navigate('/profile');
   };
 
+  const handleThemeToggle = () => {
+    toggleDarkMode();
+  };
+
   const getPhotoUrl = (photo: string) => {
     if (photo.startsWith('http')) {
       return photo;
@@ -77,7 +81,7 @@ export function Header() {
         </Typography>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <IconButton color="inherit" onClick={toggleDarkMode}>
+          <IconButton color="inherit" onClick={handleThemeToggle}>
             {darkMode ? <Brightness7 /> : <Brightness4 />}
           </IconButton>
 

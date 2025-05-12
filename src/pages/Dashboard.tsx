@@ -6,7 +6,7 @@ import {
   Card,
   CardContent,
   CircularProgress,
-  Container,
+  LinearProgress,
 } from '@mui/material';
 import {
   TrendingUp as TrendingUpIcon,
@@ -30,6 +30,7 @@ import {
 } from 'recharts';
 import { transactionService } from '../services/api';
 import { formatCurrency } from '../utils/formatters';
+import { savingService } from '../services/api';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
@@ -66,6 +67,15 @@ interface CategoryData {
 interface MonthData {
   month: number;
   year: number;
+}
+
+interface Saving {
+  id: string;
+  description: string;
+  targetAmount: number;
+  currentAmount: number;
+  deadline: string;
+  status: 'active' | 'completed' | 'cancelled';
 }
 
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -107,6 +117,7 @@ export default function Dashboard() {
   const [error, setError] = useState<string | null>(null);
   const [monthlyData, setMonthlyData] = useState<ChartData[]>([]);
   const [categoryData, setCategoryData] = useState<CategoryData[]>([]);
+  const [savingsData, setSavingsData] = useState<Saving[]>([]);
   const [stats, setStats] = useState<Stats>({
     totalIncome: 0,
     totalExpense: 0,
@@ -120,59 +131,32 @@ export default function Dashboard() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        setError(null);
-
-        // Buscar transações e estatísticas
-        const [transactionsResponse, statsResponse] = await Promise.all([
-          transactionService.getTransactions(),
-          transactionService.getStats()
+        const [transactionsResponse, statsResponse, savingsResponse] = await Promise.all([
+          transactionService.list({ limit: 5 }),
+          transactionService.getStats(),
+          savingService.getAll()
         ]);
 
-        // Verifica se transactionsResponse.transactions é um array
-        const transactions = Array.isArray(transactionsResponse.transactions) 
-          ? transactionsResponse.transactions as Transaction[]
-          : [];
+        const transactions = transactionsResponse.transactions || [];
+        setStats(statsResponse);
+        setSavingsData(savingsResponse || []);
 
-        // Verifica se statsResponse é um objeto
-        const stats = statsResponse && typeof statsResponse === 'object'
-          ? statsResponse
-          : {
-              totalIncome: 0,
-              totalExpense: 0,
-              balance: 0,
-              monthlyIncome: 0,
-              monthlyExpense: 0,
-              monthlyBalance: 0
-            };
+        // Processar dados mensais
+        const monthlyData = processMonthlyData(transactions);
+        setMonthlyData(monthlyData);
 
-        // Processa os dados para os gráficos
-        const processedData = processMonthlyData(transactions);
-        const processedCategoryData = processCategoryData(transactions);
+        // Processar dados de categoria
+        const categoryData = processCategoryData(transactions);
+        setCategoryData(categoryData);
 
-        setMonthlyData(processedData);
-        setCategoryData(processedCategoryData);
-        setStats({
-          totalIncome: parseFloat(stats.totalIncome) || 0,
-          totalExpense: parseFloat(stats.totalExpense) || 0,
-          balance: parseFloat(stats.balance) || 0,
-          monthlyIncome: parseFloat(stats.monthlyIncome) || 0,
-          monthlyExpense: parseFloat(stats.monthlyExpense) || 0,
-          monthlyBalance: parseFloat(stats.monthlyBalance) || 0
-        });
-        setLoading(false);
-      } catch (error: any) {
-        setError(error.response?.data?.details || 'Erro ao carregar dados. Por favor, tente novamente.');
+      } catch (error) {
+        setError('Erro ao carregar dados do dashboard');
+      } finally {
         setLoading(false);
       }
     };
 
-    let isMounted = true;
-    if (isMounted) {
-      fetchData();
-    }
-    return () => {
-      isMounted = false;
-    };
+    fetchData();
   }, []);
 
   const processMonthlyData = (data: Transaction[]): ChartData[] => {
@@ -194,11 +178,11 @@ export default function Dashboard() {
 
       const income = monthData
         .filter(t => t.type === 'receita')
-        .reduce((sum, t) => sum + parseFloat(t.amount.toString()), 0);
+        .reduce((sum, t) => sum + Number(t.amount), 0);
 
       const expense = monthData
         .filter(t => t.type === 'despesa')
-        .reduce((sum, t) => sum + parseFloat(t.amount.toString()), 0);
+        .reduce((sum, t) => sum + Number(t.amount), 0);
 
       return {
         month: new Date(year, month).toLocaleString('pt-BR', { month: 'short', year: '2-digit' }),
@@ -210,7 +194,7 @@ export default function Dashboard() {
   };
 
   const processCategoryData = (data: Transaction[]): CategoryData[] => {
-    if (data.length === 0) {
+    if (!data || data.length === 0) {
       return [
         { name: 'Sem dados', value: 1 }
       ];
@@ -222,7 +206,7 @@ export default function Dashboard() {
         if (!acc[curr.category]) {
           acc[curr.category] = 0;
         }
-        acc[curr.category] += parseFloat(curr.amount.toString());
+        acc[curr.category] += Number(curr.amount);
         return acc;
       }, {});
 
@@ -237,7 +221,7 @@ export default function Dashboard() {
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
-        <CircularProgress />
+        <CircularProgress color="primary" size={48} thickness={4} />
       </Box>
     );
   }
@@ -245,271 +229,316 @@ export default function Dashboard() {
   if (error) {
     return (
       <Box p={3}>
-        <div>{error}</div>
+        <Card sx={{ p: 4, background: 'linear-gradient(90deg, #FDE68A 0%, #FCA5A5 100%)', color: '#B91C1C', borderRadius: 4, boxShadow: 3 }}>
+          <Typography variant="h6">{error}</Typography>
+        </Card>
       </Box>
     );
   }
 
   return (
-    <Container maxWidth="lg" sx={{ mt: { xs: 2, md: 4 }, mb: { xs: 2, md: 4 }, px: { xs: 1, sm: 2 } }}>
-      <Grid container spacing={{ xs: 2, md: 3 }}>
-        {/* Cards de Resumo */}
-        <Grid item xs={12} sm={6} md={4}>
-          <Card 
-            sx={{ 
-              background: 'linear-gradient(45deg, #059669 30%, #10B981 90%)',
-              color: 'white',
-              boxShadow: '0 4px 20px rgba(5, 150, 105, 0.2)',
-              transition: 'transform 0.2s',
-              '&:hover': {
-                transform: 'translateY(-5px)'
-              },
-              height: '100%'
-            }}
-          >
-            <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-              <Box display="flex" alignItems="center" mb={2}>
-                <TrendingUpIcon sx={{ mr: 1, fontSize: { xs: 24, sm: 28 } }} />
-                <Typography variant="h6" sx={{ fontWeight: 500, fontSize: { xs: '1rem', sm: '1.25rem' } }}>
-                  Receitas Totais
-                </Typography>
-              </Box>
-              <Typography variant="h4" component="div" sx={{ fontWeight: 600, fontSize: { xs: '1.5rem', sm: '2rem' } }}>
-                {formatCurrency(stats.totalIncome)}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={4}>
-          <Card 
-            sx={{ 
-              background: 'linear-gradient(45deg, #DC2626 30%, #EF4444 90%)',
-              color: 'white',
-              boxShadow: '0 4px 20px rgba(220, 38, 38, 0.2)',
-              transition: 'transform 0.2s',
-              '&:hover': {
-                transform: 'translateY(-5px)'
-              },
-              height: '100%'
-            }}
-          >
-            <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-              <Box display="flex" alignItems="center" mb={2}>
-                <TrendingDownIcon sx={{ mr: 1, fontSize: { xs: 24, sm: 28 } }} />
-                <Typography variant="h6" sx={{ fontWeight: 500, fontSize: { xs: '1rem', sm: '1.25rem' } }}>
-                  Despesas Totais
-                </Typography>
-              </Box>
-              <Typography variant="h4" component="div" sx={{ fontWeight: 600, fontSize: { xs: '1.5rem', sm: '2rem' } }}>
-                {formatCurrency(stats.totalExpense)}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={4}>
-          <Card 
-            sx={{ 
-              background: stats.balance >= 0 
-                ? 'linear-gradient(45deg, #2563EB 30%, #3B82F6 90%)'
-                : 'linear-gradient(45deg, #DC2626 30%, #EF4444 90%)',
-              color: 'white',
-              boxShadow: stats.balance >= 0 
-                ? '0 4px 20px rgba(37, 99, 235, 0.2)'
-                : '0 4px 20px rgba(220, 38, 38, 0.2)',
-              transition: 'transform 0.2s',
-              '&:hover': {
-                transform: 'translateY(-5px)'
-              },
-              height: '100%'
-            }}
-          >
-            <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-              <Box display="flex" alignItems="center" mb={2}>
-                <AccountBalanceIcon sx={{ mr: 1, fontSize: { xs: 24, sm: 28 } }} />
-                <Typography variant="h6" sx={{ fontWeight: 500, fontSize: { xs: '1rem', sm: '1.25rem' } }}>
-                  Saldo
-                </Typography>
-              </Box>
-              <Typography variant="h4" component="div" sx={{ fontWeight: 600, fontSize: { xs: '1.5rem', sm: '2rem' } }}>
-                {formatCurrency(stats.balance)}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
+    <Box p={{ xs: 2, md: 3 }}>
+      <Typography variant="h4" sx={{ mb: 3, fontWeight: 700, color: 'primary.main', letterSpacing: 1 }}>
+        Dashboard
+      </Typography>
 
-        {/* Gráfico de Receitas vs Despesas */}
-        <Grid item xs={12} md={8}>
-          <Card sx={{ 
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
-            borderRadius: 2,
-            overflow: 'hidden',
-            height: '100%'
-          }}>
-            <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-              <Typography variant="h6" gutterBottom sx={{ 
-                fontWeight: 600,
-                color: '#1F2937',
-                mb: 3,
-                fontSize: { xs: '1rem', sm: '1.25rem' }
-              }}>
-                Receitas vs Despesas (Últimos 6 meses)
-              </Typography>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={monthlyData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                  <XAxis 
-                    dataKey="month" 
-                    stroke="#6B7280"
-                    tick={{ fill: '#6B7280', fontSize: 12 }}
-                  />
-                  <YAxis 
-                    stroke="#6B7280"
-                    tick={{ fill: '#6B7280', fontSize: 12 }}
-                    tickFormatter={(value) => formatCurrency(value)}
-                  />
-                  <RechartsTooltip 
-                    content={<CustomTooltip />}
-                    cursor={{ fill: 'rgba(0, 0, 0, 0.05)' }}
-                  />
-                  <Legend wrapperStyle={{ fontSize: 12 }} />
-                  <Bar 
-                    dataKey="income" 
-                    name="Receitas" 
-                    fill="#059669"
-                    radius={[4, 4, 0, 0]}
-                  />
-                  <Bar 
-                    dataKey="expense" 
-                    name="Despesas" 
-                    fill="#DC2626"
-                    radius={[4, 4, 0, 0]}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Gráfico de Despesas por Categoria */}
+      {/* Resumo Financeiro */}
+      <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid item xs={12} md={4}>
           <Card sx={{ 
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
+            p: 2,
             borderRadius: 2,
-            overflow: 'hidden',
-            height: '100%'
+            boxShadow: '0 4px 16px rgba(37,99,235,0.12)',
+            background: 'linear-gradient(135deg, #F8FAFC 60%, #F1F5F9 100%)',
           }}>
-            <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-              <Typography variant="h6" gutterBottom sx={{ 
-                fontWeight: 600,
-                color: '#1F2937',
-                mb: 3,
-                fontSize: { xs: '1rem', sm: '1.25rem' }
-              }}>
-                Despesas por Categoria
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+              <TrendingUpIcon color="success" />
+              <Typography variant="subtitle2" color="text.secondary">
+                Receitas
               </Typography>
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={categoryData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={renderCustomizedLabel}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {categoryData.map((_, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={COLORS[index % COLORS.length]}
-                        stroke="#fff"
-                        strokeWidth={2}
-                      />
-                    ))}
-                  </Pie>
-                  <RechartsTooltip 
-                    formatter={(value: number) => formatCurrency(value)}
-                    contentStyle={{
-                      backgroundColor: 'white',
-                      borderRadius: '8px',
-                      border: 'none',
-                      boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
-                      fontSize: 12
-                    }}
-                  />
-                  <Legend 
-                    layout="vertical"
-                    verticalAlign="middle"
-                    align="right"
-                    wrapperStyle={{
-                      paddingLeft: '20px',
-                      fontSize: 12
-                    }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </CardContent>
+            </Box>
+            <Typography variant="h5" sx={{ fontWeight: 600, color: 'success.main' }}>
+              {formatCurrency(stats.totalIncome)}
+            </Typography>
           </Card>
         </Grid>
-
-        {/* Gráfico de Saldo */}
-        <Grid item xs={12}>
+        <Grid item xs={12} md={4}>
           <Card sx={{ 
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
+            p: 2,
             borderRadius: 2,
-            overflow: 'hidden'
+            boxShadow: '0 4px 16px rgba(37,99,235,0.12)',
+            background: 'linear-gradient(135deg, #F8FAFC 60%, #F1F5F9 100%)',
           }}>
-            <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-              <Typography variant="h6" gutterBottom sx={{ 
-                fontWeight: 600,
-                color: '#1F2937',
-                mb: 3,
-                fontSize: { xs: '1rem', sm: '1.25rem' }
-              }}>
-                Saldo Mensal
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+              <TrendingDownIcon color="error" />
+              <Typography variant="subtitle2" color="text.secondary">
+                Despesas
               </Typography>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={monthlyData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                  <XAxis 
-                    dataKey="month" 
-                    stroke="#6B7280"
-                    tick={{ fill: '#6B7280', fontSize: 12 }}
-                  />
-                  <YAxis 
-                    stroke="#6B7280"
-                    tick={{ fill: '#6B7280', fontSize: 12 }}
-                    tickFormatter={(value) => formatCurrency(value)}
-                  />
-                  <RechartsTooltip 
-                    content={<CustomTooltip />}
-                    cursor={{ stroke: '#2563EB', strokeWidth: 2 }}
-                  />
-                  <Legend wrapperStyle={{ fontSize: 12 }} />
-                  <Line 
-                    type="monotone" 
-                    dataKey="balance" 
-                    name="Saldo" 
-                    stroke="#2563EB" 
-                    strokeWidth={2}
-                    dot={{ 
-                      fill: '#2563EB',
-                      strokeWidth: 2,
-                      r: 4
-                    }}
-                    activeDot={{ 
-                      fill: '#2563EB',
-                      strokeWidth: 2,
-                      r: 6
-                    }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </CardContent>
+            </Box>
+            <Typography variant="h5" sx={{ fontWeight: 600, color: 'error.main' }}>
+              {formatCurrency(stats.totalExpense)}
+            </Typography>
+          </Card>
+        </Grid>
+        <Grid item xs={12} md={4}>
+          <Card sx={{ 
+            p: 2,
+            borderRadius: 2,
+            boxShadow: '0 4px 16px rgba(37,99,235,0.12)',
+            background: 'linear-gradient(135deg, #F8FAFC 60%, #F1F5F9 100%)',
+          }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+              <AccountBalanceIcon color="primary" />
+              <Typography variant="subtitle2" color="text.secondary">
+                Saldo
+              </Typography>
+            </Box>
+            <Typography variant="h5" sx={{ fontWeight: 600, color: 'primary.main' }}>
+              {formatCurrency(stats.balance)}
+            </Typography>
           </Card>
         </Grid>
       </Grid>
-    </Container>
+
+      {/* Gráficos */}
+      <Grid container spacing={2}>
+        {/* Gráfico de Receitas vs Despesas e Saldo Mensal */}
+        <Grid item xs={12} md={8}>
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <Card sx={{ 
+                boxShadow: '0 4px 16px rgba(37,99,235,0.12)',
+                borderRadius: 2,
+                overflow: 'hidden',
+                p: 2,
+              }}>
+                <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+                  <Typography variant="h6" gutterBottom sx={{ 
+                    fontWeight: 600,
+                    color: 'text.primary',
+                    mb: 2,
+                    fontSize: { xs: '1rem', sm: '1.1rem' }
+                  }}>
+                    Receitas vs Despesas (Últimos 6 meses)
+                  </Typography>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={monthlyData} barGap={8}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                      <XAxis 
+                        dataKey="month" 
+                        stroke="#6B7280"
+                        tick={{ fill: '#6B7280', fontSize: 13 }}
+                      />
+                      <YAxis 
+                        stroke="#6B7280"
+                        tick={{ fill: '#6B7280', fontSize: 13 }}
+                        tickFormatter={(value) => formatCurrency(value)}
+                      />
+                      <RechartsTooltip 
+                        content={<CustomTooltip />}
+                        cursor={{ fill: 'rgba(0, 0, 0, 0.05)' }}
+                      />
+                      <Legend wrapperStyle={{ fontSize: 13 }} />
+                      <Bar 
+                        dataKey="income" 
+                        name="Receitas" 
+                        fill="#10B981"
+                        radius={[6, 6, 0, 0]}
+                      />
+                      <Bar 
+                        dataKey="expense" 
+                        name="Despesas" 
+                        fill="#DC2626"
+                        radius={[6, 6, 0, 0]}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12}>
+              <Card sx={{ 
+                boxShadow: '0 4px 16px rgba(37,99,235,0.12)',
+                borderRadius: 2,
+                overflow: 'hidden',
+                p: 2,
+              }}>
+                <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+                  <Typography variant="h6" gutterBottom sx={{ 
+                    fontWeight: 600,
+                    color: 'text.primary',
+                    mb: 2,
+                    fontSize: { xs: '1rem', sm: '1.1rem' }
+                  }}>
+                    Saldo Mensal
+                  </Typography>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <LineChart data={monthlyData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                      <XAxis 
+                        dataKey="month" 
+                        stroke="#6B7280"
+                        tick={{ fill: '#6B7280', fontSize: 13 }}
+                      />
+                      <YAxis 
+                        stroke="#6B7280"
+                        tick={{ fill: '#6B7280', fontSize: 13 }}
+                        tickFormatter={(value) => formatCurrency(value)}
+                      />
+                      <RechartsTooltip 
+                        content={<CustomTooltip />}
+                        cursor={{ stroke: '#2563EB', strokeWidth: 2 }}
+                      />
+                      <Legend wrapperStyle={{ fontSize: 13 }} />
+                      <Line 
+                        type="monotone" 
+                        dataKey="balance" 
+                        name="Saldo" 
+                        stroke="#2563EB" 
+                        strokeWidth={3}
+                        dot={{ 
+                          fill: '#2563EB',
+                          strokeWidth: 2,
+                          r: 5
+                        }}
+                        activeDot={{ 
+                          fill: '#2563EB',
+                          strokeWidth: 2,
+                          r: 7
+                        }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
+        </Grid>
+
+        {/* Gráfico de Despesas por Categoria e Progressão das Metas */}
+        <Grid item xs={12} md={4}>
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <Card sx={{ 
+                boxShadow: '0 4px 16px rgba(37,99,235,0.12)',
+                borderRadius: 2,
+                overflow: 'hidden',
+                p: 2,
+              }}>
+                <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+                  <Typography variant="h6" gutterBottom sx={{ 
+                    fontWeight: 600,
+                    color: 'text.primary',
+                    mb: 2,
+                    fontSize: { xs: '1rem', sm: '1.1rem' }
+                  }}>
+                    Despesas por Categoria
+                  </Typography>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                      <Pie
+                        data={categoryData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={renderCustomizedLabel}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {categoryData.map((_, index) => (
+                          <Cell 
+                            key={`cell-${index}`} 
+                            fill={COLORS[index % COLORS.length]}
+                            stroke="#fff"
+                            strokeWidth={2}
+                          />
+                        ))}
+                      </Pie>
+                      <RechartsTooltip 
+                        formatter={(value: number) => formatCurrency(value)}
+                        contentStyle={{
+                          backgroundColor: 'white',
+                          borderRadius: '8px',
+                          border: 'none',
+                          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
+                          fontSize: 13
+                        }}
+                      />
+                      <Legend 
+                        layout="vertical"
+                        verticalAlign="middle"
+                        align="right"
+                        wrapperStyle={{
+                          paddingLeft: '20px',
+                          fontSize: 13
+                        }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12}>
+              <Card sx={{ 
+                boxShadow: '0 4px 16px rgba(37,99,235,0.12)',
+                borderRadius: 2,
+                overflow: 'hidden',
+                p: 2,
+              }}>
+                <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+                  <Typography variant="h6" gutterBottom sx={{ 
+                    fontWeight: 600,
+                    color: 'text.primary',
+                    mb: 2,
+                    fontSize: { xs: '1rem', sm: '1.1rem' }
+                  }}>
+                    Progressão das Metas
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    {savingsData.map((saving) => {
+                      const progress = (saving.currentAmount / saving.targetAmount) * 100;
+                      return (
+                        <Box key={saving.id}>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                            <Typography variant="body2" color="text.secondary">
+                              {saving.description}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              {progress.toFixed(1)}%
+                            </Typography>
+                          </Box>
+                          <LinearProgress
+                            variant="determinate"
+                            value={progress}
+                            sx={{
+                              height: 8,
+                              borderRadius: 4,
+                              backgroundColor: 'rgba(37,99,235,0.08)',
+                              '& .MuiLinearProgress-bar': {
+                                borderRadius: 4,
+                                backgroundColor: '#2563EB',
+                              },
+                            }}
+                          />
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
+                            <Typography variant="caption" color="text.secondary">
+                              {formatCurrency(saving.currentAmount)}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {formatCurrency(saving.targetAmount)}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      );
+                    })}
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
+        </Grid>
+      </Grid>
+    </Box>
   );
 } 

@@ -44,6 +44,7 @@ import { ptBR } from 'date-fns/locale/pt-BR';
 import { transactionService } from '../services/api';
 import { formatCurrency, formatDate } from '../utils/formatters';
 import { useLoading } from '../contexts/LoadingContext';
+import { useNotification } from '../contexts/NotificationContext';
 import { LoadingButton } from '../components/LoadingButton';
 import { TransactionListSkeleton } from '../components/TransactionSkeleton';
 
@@ -102,6 +103,7 @@ const initialFormData: FormData = {
 
 export default function Transactions() {
   const { setLoading } = useLoading();
+  const { showSuccess } = useNotification();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLocalLoading] = useState(true);
   const [openDialog, setOpenDialog] = useState(false);
@@ -190,8 +192,10 @@ export default function Transactions() {
 
       if (openEditDialog && selectedTransaction) {
         await transactionService.update(selectedTransaction.id, data);
+        showSuccess('Transação atualizada com sucesso!');
       } else {
         await transactionService.create(data);
+        showSuccess('Transação criada com sucesso!');
       }
 
       handleCloseDialog();
@@ -209,6 +213,7 @@ export default function Transactions() {
     try {
       setLoading(true);
       await transactionService.delete(selectedTransaction.id);
+      showSuccess('Transação excluída com sucesso!');
       handleCloseDialog();
       fetchTransactions();
     } catch (err: any) {
@@ -230,7 +235,7 @@ export default function Transactions() {
   if (loading) {
     return (
       <Box p={{ xs: 2, md: 3 }}>
-        <Typography variant="h4" sx={{ mb: 4 }}>
+        <Typography variant="h4" sx={{ mb: 4, fontWeight: 700, color: 'primary.main', letterSpacing: 1 }}>
           Transações
         </Typography>
         <TransactionListSkeleton />
@@ -241,7 +246,7 @@ export default function Transactions() {
   return (
     <Box p={{ xs: 2, md: 3 }}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3} flexDirection={{ xs: 'column', sm: 'row' }} gap={{ xs: 2, sm: 0 }}>
-        <Typography variant="h4" sx={{ fontSize: { xs: '1.5rem', md: '2rem' } }}>
+        <Typography variant="h4" sx={{ fontSize: { xs: '1.5rem', md: '2rem' }, fontWeight: 700, color: 'primary.main', letterSpacing: 1 }}>
           Transações
         </Typography>
         <Box display="flex" gap={2} width={{ xs: '100%', sm: 'auto' }}>
@@ -251,7 +256,13 @@ export default function Transactions() {
             startIcon={<FilterListIcon />}
             onClick={() => setShowFilters(!showFilters)}
             sx={{ 
-              width: { xs: '50%', sm: 'auto' }
+              width: { xs: '50%', sm: 'auto' },
+              borderRadius: 2,
+              fontWeight: 600,
+              boxShadow: '0 2px 4px rgba(37,99,235,0.08)',
+              '&:hover': {
+                boxShadow: '0 4px 8px rgba(37,99,235,0.12)',
+              }
             }}
           >
             Filtros
@@ -262,7 +273,13 @@ export default function Transactions() {
             startIcon={<AddIcon />}
             onClick={handleOpenDialog}
             sx={{ 
-              width: { xs: '50%', sm: 'auto' }
+              width: { xs: '50%', sm: 'auto' },
+              borderRadius: 2,
+              fontWeight: 600,
+              boxShadow: '0 2px 4px rgba(37,99,235,0.12)',
+              '&:hover': {
+                boxShadow: '0 4px 8px rgba(37,99,235,0.16)',
+              }
             }}
           >
             Nova Transação
@@ -272,7 +289,12 @@ export default function Transactions() {
 
       {/* Filtros */}
       <Collapse in={showFilters}>
-        <Card sx={{ mb: 3 }}>
+        <Card sx={{ 
+          mb: 3, 
+          borderRadius: 2,
+          boxShadow: '0 2px 8px rgba(37,99,235,0.08)',
+          background: 'linear-gradient(135deg, #F8FAFC 60%, #F1F5F9 100%)',
+        }}>
           <CardContent>
             <Grid container spacing={2}>
               <Grid item xs={12} sm={6} md={3}>
@@ -288,6 +310,7 @@ export default function Transactions() {
                       </InputAdornment>
                     ),
                   }}
+                  sx={{ borderRadius: 2 }}
                 />
               </Grid>
               <Grid item xs={12} sm={6} md={3}>
@@ -297,6 +320,7 @@ export default function Transactions() {
                     value={selectedType}
                     label="Tipo"
                     onChange={(e) => setSelectedType(e.target.value)}
+                    sx={{ borderRadius: 2 }}
                   >
                     <MenuItem value="">Todos</MenuItem>
                     {types.map((type) => (
@@ -314,6 +338,7 @@ export default function Transactions() {
                     value={selectedStatus}
                     label="Status"
                     onChange={(e) => setSelectedStatus(e.target.value)}
+                    sx={{ borderRadius: 2 }}
                   >
                     <MenuItem value="">Todos</MenuItem>
                     {statuses.map((status) => (
@@ -330,7 +355,7 @@ export default function Transactions() {
                     label="Data Inicial"
                     value={startDate}
                     onChange={setStartDate}
-                    slotProps={{ textField: { fullWidth: true } }}
+                    slotProps={{ textField: { fullWidth: true, sx: { borderRadius: 2 } } }}
                   />
                 </LocalizationProvider>
               </Grid>
@@ -340,7 +365,7 @@ export default function Transactions() {
                     label="Data Final"
                     value={endDate}
                     onChange={setEndDate}
-                    slotProps={{ textField: { fullWidth: true } }}
+                    slotProps={{ textField: { fullWidth: true, sx: { borderRadius: 2 } } }}
                   />
                 </LocalizationProvider>
               </Grid>
@@ -350,35 +375,53 @@ export default function Transactions() {
       </Collapse>
 
       {/* Tabela de Transações */}
-      <Card>
+      <Card sx={{ 
+        borderRadius: 2,
+        boxShadow: '0 2px 8px rgba(37,99,235,0.08)',
+        overflow: 'hidden',
+      }}>
         <TableContainer sx={{ overflowX: 'auto' }}>
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>Descrição</TableCell>
-                <TableCell>Valor</TableCell>
-                <TableCell>Tipo</TableCell>
-                <TableCell>Categoria</TableCell>
-                <TableCell>Data</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell align="right">Ações</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Descrição</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Valor</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Tipo</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Categoria</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Data</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 600 }}>Ações</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {transactions.map((transaction) => {
-                const type = types.find((t) => t.value === transaction.type);
                 const status = statuses.find((s) => s.value === transaction.status);
 
                 return (
-                  <TableRow key={transaction.id}>
+                  <TableRow 
+                    key={transaction.id}
+                    sx={{ 
+                      '&:hover': { 
+                        backgroundColor: 'rgba(37,99,235,0.04)',
+                        transition: 'background-color 0.2s'
+                      }
+                    }}
+                  >
                     <TableCell>{transaction.description}</TableCell>
                     <TableCell>{formatCurrency(transaction.amount)}</TableCell>
                     <TableCell>
                       <Chip
-                        icon={type?.icon ? <type.icon /> : undefined}
-                        label={type?.label}
-                        color={type?.color as any}
+                        label={status?.label}
+                        color={status?.color as any}
                         size="small"
+                        sx={{
+                          borderRadius: 2,
+                          color: status?.color === 'warning' ? '#fff' : undefined,
+                          backgroundColor: status?.color === 'warning' ? '#f59e42' : undefined,
+                          '& .MuiChip-label': {
+                            color: status?.color === 'warning' ? '#fff' : undefined,
+                          },
+                        }}
                       />
                     </TableCell>
                     <TableCell>{transaction.category}</TableCell>
@@ -388,19 +431,37 @@ export default function Transactions() {
                         label={status?.label}
                         color={status?.color as any}
                         size="small"
+                        sx={{
+                          borderRadius: 2,
+                          color: status?.color === 'warning' ? '#fff' : undefined,
+                          backgroundColor: status?.color === 'warning' ? '#f59e42' : undefined,
+                          '& .MuiChip-label': {
+                            color: status?.color === 'warning' ? '#fff' : undefined,
+                          },
+                        }}
                       />
                     </TableCell>
                     <TableCell align="right">
                       <IconButton
                         size="small"
                         onClick={() => handleOpenEditDialog(transaction)}
-                        sx={{ mr: 1 }}
+                        sx={{ 
+                          mr: 1,
+                          '&:hover': {
+                            backgroundColor: 'rgba(37,99,235,0.1)',
+                          }
+                        }}
                       >
                         <EditIcon fontSize="small" />
                       </IconButton>
                       <IconButton
                         size="small"
                         onClick={() => handleOpenDeleteDialog(transaction)}
+                        sx={{ 
+                          '&:hover': {
+                            backgroundColor: 'rgba(220,38,38,0.1)',
+                          }
+                        }}
                       >
                         <DeleteIcon fontSize="small" />
                       </IconButton>
@@ -430,8 +491,14 @@ export default function Transactions() {
         onClose={handleCloseDialog}
         maxWidth="sm"
         fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            boxShadow: '0 8px 32px rgba(37,99,235,0.15)',
+          }
+        }}
       >
-        <DialogTitle>
+        <DialogTitle sx={{ fontWeight: 600, color: 'primary.main' }}>
           {openEditDialog ? 'Editar Transação' : 'Nova Transação'}
         </DialogTitle>
         <DialogContent>
@@ -444,6 +511,7 @@ export default function Transactions() {
               }
               fullWidth
               required
+              sx={{ borderRadius: 3 }}
             />
             <TextField
               label="Valor"
@@ -459,6 +527,7 @@ export default function Transactions() {
                   <InputAdornment position="start">R$</InputAdornment>
                 ),
               }}
+              sx={{ borderRadius: 3 }}
             />
             <FormControl fullWidth required>
               <InputLabel>Tipo</InputLabel>
@@ -471,6 +540,7 @@ export default function Transactions() {
                     type: e.target.value as 'receita' | 'despesa',
                   })
                 }
+                sx={{ borderRadius: 3 }}
               >
                 {types.map((type) => (
                   <MenuItem key={type.value} value={type.value}>
@@ -487,6 +557,7 @@ export default function Transactions() {
                 onChange={(e) =>
                   setFormData({ ...formData, category: e.target.value })
                 }
+                sx={{ borderRadius: 3 }}
               >
                 {categories.map((category) => (
                   <MenuItem key={category} value={category}>
@@ -500,7 +571,7 @@ export default function Transactions() {
                 label="Data"
                 value={formData.date}
                 onChange={(date) => setFormData({ ...formData, date })}
-                slotProps={{ textField: { fullWidth: true, required: true } }}
+                slotProps={{ textField: { fullWidth: true, required: true, sx: { borderRadius: 3 } } }}
               />
             </LocalizationProvider>
             <FormControl fullWidth required>
@@ -514,6 +585,7 @@ export default function Transactions() {
                     status: e.target.value as 'pendente' | 'concluida' | 'cancelada',
                   })
                 }
+                sx={{ borderRadius: 3 }}
               >
                 {statuses.map((status) => (
                   <MenuItem key={status.value} value={status.value}>
@@ -531,16 +603,33 @@ export default function Transactions() {
               fullWidth
               multiline
               rows={3}
+              sx={{ borderRadius: 3 }}
             />
           </Box>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog}>Cancelar</Button>
+        <DialogActions sx={{ p: 3 }}>
+          <Button 
+            onClick={handleCloseDialog}
+            sx={{ 
+              borderRadius: 3,
+              fontWeight: 600,
+            }}
+          >
+            Cancelar
+          </Button>
           <LoadingButton
             onClick={handleSubmit}
             variant="contained"
             loading={loading}
             loadingText="Salvando..."
+            sx={{ 
+              borderRadius: 3,
+              fontWeight: 600,
+              boxShadow: '0 2px 8px rgba(37,99,235,0.15)',
+              '&:hover': {
+                boxShadow: '0 4px 16px rgba(37,99,235,0.25)',
+              }
+            }}
           >
             Salvar
           </LoadingButton>
@@ -548,24 +637,60 @@ export default function Transactions() {
       </Dialog>
 
       {/* Diálogo de Confirmação de Exclusão */}
-      <Dialog open={openDeleteDialog} onClose={handleCloseDialog}>
-        <DialogTitle>Confirmar Exclusão</DialogTitle>
+      <Dialog 
+        open={openDeleteDialog} 
+        onClose={handleCloseDialog}
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            boxShadow: '0 8px 32px rgba(37,99,235,0.15)',
+          }
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 600, color: 'error.main' }}>Confirmar Exclusão</DialogTitle>
         <DialogContent>
           <Typography>
             Tem certeza que deseja excluir a transação "{selectedTransaction?.description}"?
             Esta ação não pode ser desfeita.
           </Typography>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog}>Cancelar</Button>
-          <Button onClick={handleDelete} variant="contained" color="error">
+        <DialogActions sx={{ p: 3 }}>
+          <Button 
+            onClick={handleCloseDialog}
+            sx={{ 
+              borderRadius: 3,
+              fontWeight: 600,
+            }}
+          >
+            Cancelar
+          </Button>
+          <Button 
+            onClick={handleDelete} 
+            variant="contained" 
+            color="error"
+            sx={{ 
+              borderRadius: 3,
+              fontWeight: 600,
+              boxShadow: '0 2px 8px rgba(220,38,38,0.15)',
+              '&:hover': {
+                boxShadow: '0 4px 16px rgba(220,38,38,0.25)',
+              }
+            }}
+          >
             Excluir
           </Button>
         </DialogActions>
       </Dialog>
 
       {error && (
-        <Alert severity="error" sx={{ mt: 2 }}>
+        <Alert 
+          severity="error" 
+          sx={{ 
+            mt: 2,
+            borderRadius: 3,
+            boxShadow: '0 4px 24px rgba(220,38,38,0.08)',
+          }}
+        >
           {error}
         </Alert>
       )}
