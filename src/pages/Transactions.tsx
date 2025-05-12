@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -26,6 +26,7 @@ import {
   Chip,
   InputAdornment,
   Collapse,
+  Alert,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -43,6 +44,8 @@ import { ptBR } from 'date-fns/locale/pt-BR';
 import { transactionService } from '../services/api';
 import { formatCurrency, formatDate } from '../utils/formatters';
 import { useLoading } from '../contexts/LoadingContext';
+import { LoadingButton } from '../components/LoadingButton';
+import { TransactionListSkeleton } from '../components/TransactionSkeleton';
 
 const categories = [
   'Moradia',
@@ -100,6 +103,7 @@ const initialFormData: FormData = {
 export default function Transactions() {
   const { setLoading } = useLoading();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loading, setLocalLoading] = useState(true);
   const [openDialog, setOpenDialog] = useState(false);
   const [openEditDialog, setOpenEditDialog] = useState(false);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
@@ -115,10 +119,11 @@ export default function Transactions() {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [total, setTotal] = useState(0);
   const [showFilters, setShowFilters] = useState(false);
+  const [error, setError] = useState('');
 
   const fetchTransactions = async () => {
     try {
-      setLoading(true);
+      setLocalLoading(true);
       const response = await transactionService.list({
         search: searchTerm,
         category: selectedCategory,
@@ -131,10 +136,11 @@ export default function Transactions() {
       });
       setTransactions(response.transactions || []);
       setTotal(response.total || 0);
-    } catch (err) {
+    } catch (err: any) {
+      setError('Erro ao carregar transações');
       console.error('Erro ao carregar transações:', err);
     } finally {
-      setLoading(false);
+      setLocalLoading(false);
     }
   };
 
@@ -190,8 +196,8 @@ export default function Transactions() {
 
       handleCloseDialog();
       fetchTransactions();
-    } catch (err) {
-      console.error('Erro ao salvar transação:', err);
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Erro ao salvar transação');
     } finally {
       setLoading(false);
     }
@@ -205,8 +211,8 @@ export default function Transactions() {
       await transactionService.delete(selectedTransaction.id);
       handleCloseDialog();
       fetchTransactions();
-    } catch (err) {
-      console.error('Erro ao excluir transação:', err);
+    } catch (err: any) {
+      setError('Erro ao excluir transação');
     } finally {
       setLoading(false);
     }
@@ -220,6 +226,17 @@ export default function Transactions() {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
   };
+
+  if (loading) {
+    return (
+      <Box p={{ xs: 2, md: 3 }}>
+        <Typography variant="h4" sx={{ mb: 4 }}>
+          Transações
+        </Typography>
+        <TransactionListSkeleton />
+      </Box>
+    );
+  }
 
   return (
     <Box p={{ xs: 2, md: 3 }}>
@@ -519,9 +536,14 @@ export default function Transactions() {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDialog}>Cancelar</Button>
-          <Button onClick={handleSubmit} variant="contained" color="primary">
+          <LoadingButton
+            onClick={handleSubmit}
+            variant="contained"
+            loading={loading}
+            loadingText="Salvando..."
+          >
             Salvar
-          </Button>
+          </LoadingButton>
         </DialogActions>
       </Dialog>
 
@@ -541,6 +563,12 @@ export default function Transactions() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {error && (
+        <Alert severity="error" sx={{ mt: 2 }}>
+          {error}
+        </Alert>
+      )}
     </Box>
   );
 } 

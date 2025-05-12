@@ -1,4 +1,3 @@
-import React from 'react';
 import { Button, ButtonProps, CircularProgress } from '@mui/material';
 
 interface LoadingButtonProps extends ButtonProps {

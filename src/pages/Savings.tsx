@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -24,6 +24,7 @@ import {
   TableRow,
   TablePagination,
   InputAdornment,
+  Alert,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -38,6 +39,8 @@ import { ptBR } from 'date-fns/locale/pt-BR';
 import { savingService } from '../services/api';
 import { formatCurrency, formatDate } from '../utils/formatters';
 import { useLoading } from '../contexts/LoadingContext';
+import { LoadingButton } from '../components/LoadingButton';
+import { SavingsListSkeleton } from '../components/SavingsSkeleton';
 
 const categories = [
   'Viagem',
@@ -94,6 +97,7 @@ const initialAddAmountFormData: AddAmountFormData = {
 export default function Savings() {
   const { setLoading } = useLoading();
   const [savings, setSavings] = useState<Saving[]>([]);
+  const [loading, setLocalLoading] = useState(true);
   const [openDialog, setOpenDialog] = useState(false);
   const [openEditDialog, setOpenEditDialog] = useState(false);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
@@ -103,19 +107,21 @@ export default function Savings() {
   const [addAmountFormData, setAddAmountFormData] = useState<AddAmountFormData>(initialAddAmountFormData);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [error, setError] = useState('');
 
   const fetchSavings = async () => {
     try {
-      setLoading(true);
+      setLocalLoading(true);
       const response = await savingService.list({
         page: page + 1,
         limit: rowsPerPage,
       });
       setSavings(response.savings);
-    } catch (err) {
+    } catch (err: any) {
+      setError('Erro ao carregar metas de economia');
       console.error('Erro ao carregar metas de economia:', err);
     } finally {
-      setLoading(false);
+      setLocalLoading(false);
     }
   };
 
@@ -178,9 +184,8 @@ export default function Savings() {
 
       handleCloseDialog();
       fetchSavings();
-    } catch (err) {
-      console.error('Erro ao salvar meta de economia:', err);
-      // TODO: Mostrar mensagem de erro para o usuário
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Erro ao salvar meta de economia');
     } finally {
       setLoading(false);
     }
@@ -194,9 +199,8 @@ export default function Savings() {
       await savingService.addAmount(selectedSaving.id, parseFloat(addAmountFormData.amount));
       handleCloseDialog();
       fetchSavings();
-    } catch (err) {
-      console.error('Erro ao adicionar valor:', err);
-      // TODO: Mostrar mensagem de erro para o usuário
+    } catch (err: any) {
+      setError('Erro ao adicionar valor');
     } finally {
       setLoading(false);
     }
@@ -210,9 +214,8 @@ export default function Savings() {
       await savingService.delete(selectedSaving.id);
       handleCloseDialog();
       fetchSavings();
-    } catch (err) {
-      console.error('Erro ao excluir meta de economia:', err);
-      // TODO: Mostrar mensagem de erro para o usuário
+    } catch (err: any) {
+      setError('Erro ao excluir meta de economia');
     } finally {
       setLoading(false);
     }
@@ -230,6 +233,17 @@ export default function Savings() {
   const calculateProgress = (current: number, target: number) => {
     return Math.min((current / target) * 100, 100);
   };
+
+  if (loading) {
+    return (
+      <Box p={{ xs: 2, md: 3 }}>
+        <Typography variant="h4" sx={{ mb: 4 }}>
+          Metas de Economia
+        </Typography>
+        <SavingsListSkeleton />
+      </Box>
+    );
+  }
 
   return (
     <Box p={{ xs: 2, md: 3 }}>
@@ -249,6 +263,12 @@ export default function Savings() {
           Nova Meta
         </Button>
       </Box>
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
 
       {/* Lista de Metas */}
       <Card>
@@ -431,9 +451,14 @@ export default function Savings() {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDialog}>Cancelar</Button>
-          <Button onClick={handleSubmit} variant="contained" color="primary">
+          <LoadingButton
+            onClick={handleSubmit}
+            variant="contained"
+            loading={loading}
+            loadingText="Salvando..."
+          >
             Salvar
-          </Button>
+          </LoadingButton>
         </DialogActions>
       </Dialog>
 
@@ -475,9 +500,14 @@ export default function Savings() {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDialog}>Cancelar</Button>
-          <Button onClick={handleAddAmount} variant="contained" color="primary">
+          <LoadingButton
+            onClick={handleAddAmount}
+            variant="contained"
+            loading={loading}
+            loadingText="Adicionando..."
+          >
             Adicionar
-          </Button>
+          </LoadingButton>
         </DialogActions>
       </Dialog>
 
@@ -492,9 +522,15 @@ export default function Savings() {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDialog}>Cancelar</Button>
-          <Button onClick={handleDelete} variant="contained" color="error">
+          <LoadingButton
+            onClick={handleDelete}
+            variant="contained"
+            color="error"
+            loading={loading}
+            loadingText="Excluindo..."
+          >
             Excluir
-          </Button>
+          </LoadingButton>
         </DialogActions>
       </Dialog>
     </Box>
