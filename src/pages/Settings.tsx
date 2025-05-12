@@ -8,14 +8,14 @@ import {
   FormControlLabel,
   Divider,
   Button,
-  CircularProgress,
 } from '@mui/material';
 import { authService } from '../services/api';
 import { useTheme } from '../contexts/ThemeContext';
+import { useLoading } from '../contexts/LoadingContext';
 
 export default function Settings() {
   const { darkMode, toggleDarkMode } = useTheme();
-  const [loading, setLoading] = useState(true);
+  const { setLoading } = useLoading();
   const [saving, setSaving] = useState(false);
   const [settings, setSettings] = useState({
     emailNotifications: true,
@@ -52,75 +52,78 @@ export default function Settings() {
   const handleSave = async () => {
     try {
       setSaving(true);
-
+      setLoading(true);
       await authService.updateSettings(settings);
     } catch (err: any) {
       console.error('Erro ao salvar configurações:', err);
     } finally {
       setSaving(false);
+      setLoading(false);
     }
   };
 
-  if (loading) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
-        <CircularProgress />
-      </Box>
-    );
-  }
-
   return (
     <Box p={{ xs: 2, md: 3 }}>
-      <Typography variant="h4" gutterBottom sx={{ fontSize: { xs: '1.5rem', md: '2rem' } }}>
+      <Typography variant="h4" sx={{ mb: 4 }}>
         Configurações
       </Typography>
 
       <Card>
         <CardContent>
-          <Typography variant="h6" gutterBottom>
-            Notificações
+          <Typography variant="h6" sx={{ mb: 3 }}>
+            Preferências
           </Typography>
 
-          <FormControlLabel
-            control={
-              <Switch
-                checked={settings.emailNotifications}
-                onChange={handleChange('emailNotifications')}
-                color="primary"
-              />
-            }
-            label="Receber notificações por e-mail"
-          />
+          <Box sx={{ mb: 3 }}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={settings.emailNotifications}
+                  onChange={handleChange('emailNotifications')}
+                />
+              }
+              label="Notificações por Email"
+            />
+            <Typography variant="body2" color="text.secondary" sx={{ ml: 4 }}>
+              Receba notificações sobre suas transações e metas por email
+            </Typography>
+          </Box>
 
-          <FormControlLabel
-            control={
-              <Switch
-                checked={settings.monthlyReport}
-                onChange={handleChange('monthlyReport')}
-                color="primary"
-              />
-            }
-            label="Receber relatório mensal"
-          />
+          <Divider sx={{ my: 2 }} />
 
-          <Divider sx={{ my: 3 }} />
+          <Box sx={{ mb: 3 }}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={settings.monthlyReport}
+                  onChange={handleChange('monthlyReport')}
+                />
+              }
+              label="Relatório Mensal"
+            />
+            <Typography variant="body2" color="text.secondary" sx={{ ml: 4 }}>
+              Receba um relatório mensal com suas finanças
+            </Typography>
+          </Box>
 
-          <Typography variant="h6" gutterBottom>
-            Aparência
-          </Typography>
+          <Divider sx={{ my: 2 }} />
 
-          <FormControlLabel
-            control={
-              <Switch
-                checked={darkMode}
-                onChange={toggleDarkMode}
-                color="primary"
-              />
-            }
-            label="Modo escuro"
-          />
+          <Box sx={{ mb: 3 }}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={darkMode}
+                  onChange={toggleDarkMode}
+                />
+              }
+              label="Modo Escuro"
+            />
+            <Typography variant="body2" color="text.secondary" sx={{ ml: 4 }}>
+              Ative o tema escuro para melhor visualização em ambientes com pouca luz
+            </Typography>
+          </Box>
 
-          <Box mt={3}>
+          <Box sx={{ mt: 4 }}>
             <Button
               variant="contained"
               color="primary"

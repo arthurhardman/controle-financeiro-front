@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TextField, Button, Typography, Box, Container, Alert } from '@mui/material';
-import api from '../services/api';
+import { authService } from '../services/api';
+import { useLoading } from '../contexts/LoadingContext';
 
 const Register: React.FC = () => {
   const navigate = useNavigate();
+  const { setLoading } = useLoading();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -31,14 +33,13 @@ const Register: React.FC = () => {
     }
 
     try {
-      await api.post('/auth/register', {
-        name: formData.name,
-        email: formData.email,
-        password: formData.password
-      });
+      setLoading(true);
+      await authService.register(formData.name, formData.email, formData.password);
       navigate('/login');
     } catch (err: any) {
       setError(err.response?.data?.error || 'Erro ao criar conta');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -53,14 +54,14 @@ const Register: React.FC = () => {
         }}
       >
         <Typography component="h1" variant="h5">
-          Criar Conta
+          Cadastro
         </Typography>
-        <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
-          {error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {error}
-            </Alert>
-          )}
+        {error && (
+          <Alert severity="error" sx={{ mt: 2, width: '100%' }}>
+            {error}
+          </Alert>
+        )}
+        <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3 }}>
           <TextField
             margin="normal"
             required
@@ -115,13 +116,14 @@ const Register: React.FC = () => {
           >
             Cadastrar
           </Button>
-          <Button
-            fullWidth
-            variant="text"
-            onClick={() => navigate('/login')}
-          >
-            Já tem uma conta? Faça login
-          </Button>
+          <Box sx={{ textAlign: 'center' }}>
+            <Button
+              onClick={() => navigate('/login')}
+              sx={{ textTransform: 'none' }}
+            >
+              Já tem uma conta? Faça login
+            </Button>
+          </Box>
         </Box>
       </Box>
     </Container>

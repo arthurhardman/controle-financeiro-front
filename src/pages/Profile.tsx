@@ -14,9 +14,10 @@ import {
 } from '@mui/material';
 import { PhotoCamera as PhotoCameraIcon } from '@mui/icons-material';
 import { authService } from '../services/api';
+import { useLoading } from '../contexts/LoadingContext';
 
 export default function Profile() {
-  const [loading, setLoading] = useState(true);
+  const { setLoading } = useLoading();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -75,11 +76,16 @@ export default function Profile() {
 
     try {
       setSaving(true);
-      await authService.updateProfile({
+      const data: any = {
         name: formData.name,
-        currentPassword: formData.currentPassword,
-        newPassword: formData.newPassword,
-      });
+      };
+
+      if (formData.currentPassword && formData.newPassword) {
+        data.currentPassword = formData.currentPassword;
+        data.newPassword = formData.newPassword;
+      }
+
+      await authService.updateProfile(data);
       setSuccess('Perfil atualizado com sucesso!');
       setFormData(prev => ({
         ...prev,
@@ -94,64 +100,53 @@ export default function Profile() {
     }
   };
 
-  if (loading) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
-        <CircularProgress />
-      </Box>
-    );
-  }
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setPhotoFile(e.target.files[0]);
+      setPhoto(URL.createObjectURL(e.target.files[0]));
+    }
+  };
 
   return (
     <Box p={{ xs: 2, md: 3 }}>
-      <Typography variant="h4" gutterBottom sx={{ fontSize: { xs: '1.5rem', md: '2rem' } }}>
+      <Typography variant="h4" sx={{ mb: 4 }}>
         Perfil
       </Typography>
 
       <Grid container spacing={3}>
         <Grid item xs={12} md={4}>
           <Card>
-            <CardContent sx={{ textAlign: 'center', p: 3 }}>
-              <Box position="relative" display="inline-block">
-                <Avatar
-                  src={photo || undefined}
-                  sx={{
-                    width: 120,
-                    height: 120,
-                    fontSize: '3rem',
-                    bgcolor: 'primary.main',
-                    objectFit: 'cover',
-                  }}
+            <CardContent sx={{ textAlign: 'center' }}>
+              <input
+                accept="image/*"
+                style={{ display: 'none' }}
+                id="photo-upload"
+                type="file"
+                onChange={handlePhotoChange}
+              />
+              <label htmlFor="photo-upload">
+                <IconButton
+                  component="span"
+                  sx={{ position: 'relative', mb: 2 }}
                 >
-                  {user?.name?.charAt(0).toUpperCase()}
-                </Avatar>
-                <input
-                  accept="image/*"
-                  style={{ display: 'none' }}
-                  id="upload-photo-profile"
-                  type="file"
-                  onChange={e => {
-                    if (e.target.files && e.target.files[0]) {
-                      setPhotoFile(e.target.files[0]);
-                      setPhoto(URL.createObjectURL(e.target.files[0]));
-                    }
-                  }}
-                />
-                <label htmlFor="upload-photo-profile">
-                  <IconButton
-                    component="span"
+                  <Avatar
+                    src={photo || undefined}
+                    sx={{ width: 120, height: 120 }}
+                  />
+                  <Box
                     sx={{
                       position: 'absolute',
                       bottom: 0,
                       right: 0,
-                      bgcolor: 'background.paper',
-                      '&:hover': { bgcolor: 'background.paper' },
+                      backgroundColor: 'primary.main',
+                      borderRadius: '50%',
+                      p: 0.5,
                     }}
                   >
-                    <PhotoCameraIcon />
-                  </IconButton>
-                </label>
-              </Box>
+                    <PhotoCameraIcon sx={{ color: 'white' }} />
+                  </Box>
+                </IconButton>
+              </label>
               {photoFile && (
                 <Box mt={2}>
                   <Button
@@ -203,7 +198,7 @@ export default function Profile() {
         <Grid item xs={12} md={8}>
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom>
+              <Typography variant="h6" sx={{ mb: 3 }}>
                 Informações Pessoais
               </Typography>
 
@@ -219,7 +214,7 @@ export default function Profile() {
                 </Alert>
               )}
 
-              <form onSubmit={handleSubmit}>
+              <Box component="form" onSubmit={handleSubmit}>
                 <Grid container spacing={2}>
                   <Grid item xs={12}>
                     <TextField
@@ -231,77 +226,62 @@ export default function Profile() {
                       required
                     />
                   </Grid>
-
                   <Grid item xs={12}>
                     <TextField
                       fullWidth
-                      label="E-mail"
+                      label="Email"
                       name="email"
                       value={formData.email}
                       disabled
-                      helperText="O e-mail não pode ser alterado"
                     />
                   </Grid>
-
                   <Grid item xs={12}>
-                    <Typography variant="subtitle1" gutterBottom>
+                    <Typography variant="subtitle1" sx={{ mb: 1 }}>
                       Alterar Senha
                     </Typography>
                   </Grid>
-
                   <Grid item xs={12}>
                     <TextField
                       fullWidth
-                      type="password"
                       label="Senha Atual"
                       name="currentPassword"
+                      type="password"
                       value={formData.currentPassword}
                       onChange={handleChange}
-                      required={!!formData.newPassword}
                     />
                   </Grid>
-
                   <Grid item xs={12} sm={6}>
                     <TextField
                       fullWidth
-                      type="password"
                       label="Nova Senha"
                       name="newPassword"
+                      type="password"
                       value={formData.newPassword}
                       onChange={handleChange}
                     />
                   </Grid>
-
                   <Grid item xs={12} sm={6}>
                     <TextField
                       fullWidth
-                      type="password"
                       label="Confirmar Nova Senha"
                       name="confirmPassword"
+                      type="password"
                       value={formData.confirmPassword}
                       onChange={handleChange}
-                      error={!!formData.newPassword && formData.newPassword !== formData.confirmPassword}
-                      helperText={
-                        formData.newPassword && formData.newPassword !== formData.confirmPassword
-                          ? 'As senhas não coincidem'
-                          : ''
-                      }
                     />
                   </Grid>
-
                   <Grid item xs={12}>
                     <Button
                       type="submit"
                       variant="contained"
                       color="primary"
                       disabled={saving}
-                      sx={{ mt: 2 }}
                     >
                       {saving ? 'Salvando...' : 'Salvar Alterações'}
                     </Button>
                   </Grid>
                 </Grid>
-              </form>
+              </Box>
             </CardContent>
           </Card>
         </Grid>

@@ -1,45 +1,50 @@
 import React, { createContext, useContext, useState } from 'react';
-import { CircularProgress, Box } from '@mui/material';
+import { Backdrop, CircularProgress, Box } from '@mui/material';
 
-interface LoadingContextData {
-  isLoading: boolean;
+interface LoadingContextType {
   setLoading: (loading: boolean) => void;
 }
 
-const LoadingContext = createContext<LoadingContextData>({} as LoadingContextData);
+const LoadingContext = createContext<LoadingContextType>({
+  setLoading: () => {},
+});
 
-export function LoadingProvider({ children }: { children: React.ReactNode }) {
-  const [isLoading, setIsLoading] = useState(false);
+function LoadingProvider({ children }: { children: React.ReactNode }) {
+  const [loading, setLoading] = useState(false);
 
   return (
-    <LoadingContext.Provider value={{ isLoading, setLoading: setIsLoading }}>
-      {isLoading && (
+    <LoadingContext.Provider value={{ setLoading }}>
+      {children}
+      <Backdrop
+        sx={{
+          color: '#fff',
+          zIndex: (theme) => theme.zIndex.drawer + 1,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          backdropFilter: 'blur(2px)',
+        }}
+        open={loading}
+      >
         <Box
           sx={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
             display: 'flex',
+            flexDirection: 'column',
             alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            zIndex: 9999,
+            gap: 2,
           }}
         >
-          <CircularProgress />
+          <CircularProgress color="primary" size={40} thickness={4} />
         </Box>
-      )}
-      {children}
+      </Backdrop>
     </LoadingContext.Provider>
   );
 }
 
-export function useLoading() {
+function useLoading() {
   const context = useContext(LoadingContext);
   if (!context) {
     throw new Error('useLoading must be used within a LoadingProvider');
   }
   return context;
-} 
+}
+
+export { LoadingProvider, useLoading }; 

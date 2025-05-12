@@ -37,6 +37,7 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { ptBR } from 'date-fns/locale/pt-BR';
 import { savingService } from '../services/api';
 import { formatCurrency, formatDate } from '../utils/formatters';
+import { useLoading } from '../contexts/LoadingContext';
 
 const categories = [
   'Viagem',
@@ -91,6 +92,7 @@ const initialAddAmountFormData: AddAmountFormData = {
 };
 
 export default function Savings() {
+  const { setLoading } = useLoading();
   const [savings, setSavings] = useState<Saving[]>([]);
   const [openDialog, setOpenDialog] = useState(false);
   const [openEditDialog, setOpenEditDialog] = useState(false);
@@ -104,6 +106,7 @@ export default function Savings() {
 
   const fetchSavings = async () => {
     try {
+      setLoading(true);
       const response = await savingService.list({
         page: page + 1,
         limit: rowsPerPage,
@@ -111,6 +114,8 @@ export default function Savings() {
       setSavings(response.savings);
     } catch (err) {
       console.error('Erro ao carregar metas de economia:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -157,6 +162,7 @@ export default function Savings() {
 
   const handleSubmit = async () => {
     try {
+      setLoading(true);
       const data = {
         ...formData,
         targetAmount: parseFloat(formData.targetAmount),
@@ -175,6 +181,8 @@ export default function Savings() {
     } catch (err) {
       console.error('Erro ao salvar meta de economia:', err);
       // TODO: Mostrar mensagem de erro para o usuário
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -182,12 +190,15 @@ export default function Savings() {
     if (!selectedSaving) return;
 
     try {
+      setLoading(true);
       await savingService.addAmount(selectedSaving.id, parseFloat(addAmountFormData.amount));
       handleCloseDialog();
       fetchSavings();
     } catch (err) {
       console.error('Erro ao adicionar valor:', err);
       // TODO: Mostrar mensagem de erro para o usuário
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -195,12 +206,15 @@ export default function Savings() {
     if (!selectedSaving) return;
 
     try {
+      setLoading(true);
       await savingService.delete(selectedSaving.id);
       handleCloseDialog();
       fetchSavings();
     } catch (err) {
       console.error('Erro ao excluir meta de economia:', err);
       // TODO: Mostrar mensagem de erro para o usuário
+    } finally {
+      setLoading(false);
     }
   };
 

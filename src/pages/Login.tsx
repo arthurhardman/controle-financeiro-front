@@ -11,10 +11,12 @@ import {
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useLoading } from '../contexts/LoadingContext';
 
 const Login = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const { setLoading } = useLoading();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -32,17 +34,20 @@ const Login = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
 
     try {
       await login(formData.email, formData.password);
       navigate('/');
     } catch (err: any) {
       setError(err.response?.data?.error || 'Erro ao fazer login');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <Container maxWidth="sm">
+    <Container component="main" maxWidth="xs">
       <Box
         sx={{
           marginTop: 8,

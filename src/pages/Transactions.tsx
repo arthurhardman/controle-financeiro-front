@@ -42,6 +42,7 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { ptBR } from 'date-fns/locale/pt-BR';
 import { transactionService } from '../services/api';
 import { formatCurrency, formatDate } from '../utils/formatters';
+import { useLoading } from '../contexts/LoadingContext';
 
 const categories = [
   'Moradia',
@@ -97,6 +98,7 @@ const initialFormData: FormData = {
 };
 
 export default function Transactions() {
+  const { setLoading } = useLoading();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [openDialog, setOpenDialog] = useState(false);
   const [openEditDialog, setOpenEditDialog] = useState(false);
@@ -116,6 +118,7 @@ export default function Transactions() {
 
   const fetchTransactions = async () => {
     try {
+      setLoading(true);
       const response = await transactionService.list({
         search: searchTerm,
         category: selectedCategory,
@@ -130,6 +133,8 @@ export default function Transactions() {
       setTotal(response.total || 0);
     } catch (err) {
       console.error('Erro ao carregar transações:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -170,6 +175,7 @@ export default function Transactions() {
 
   const handleSubmit = async () => {
     try {
+      setLoading(true);
       const data = {
         ...formData,
         amount: parseFloat(formData.amount),
@@ -186,7 +192,8 @@ export default function Transactions() {
       fetchTransactions();
     } catch (err) {
       console.error('Erro ao salvar transação:', err);
-      // TODO: Mostrar mensagem de erro para o usuário
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -194,12 +201,14 @@ export default function Transactions() {
     if (!selectedTransaction) return;
 
     try {
+      setLoading(true);
       await transactionService.delete(selectedTransaction.id);
       handleCloseDialog();
       fetchTransactions();
     } catch (err) {
       console.error('Erro ao excluir transação:', err);
-      // TODO: Mostrar mensagem de erro para o usuário
+    } finally {
+      setLoading(false);
     }
   };
 
