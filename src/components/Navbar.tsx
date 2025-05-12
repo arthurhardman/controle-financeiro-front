@@ -70,6 +70,13 @@ export default function Navbar() {
     }
   };
 
+  const adminMenuItems = user?.role === 'admin'
+    ? [
+        ...menuItems,
+        { text: 'Usuários', icon: <PersonIcon />, path: '/users' },
+      ]
+    : menuItems;
+
   const drawer = (
     <Box sx={{ width: 250 }}>
       <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -95,7 +102,7 @@ export default function Navbar() {
       </Box>
       <Divider />
       <List>
-        {menuItems.map((item) => (
+        {adminMenuItems.map((item) => (
           <ListItem
             button
             key={item.text}
@@ -191,7 +198,7 @@ export default function Navbar() {
           </Typography>
           {!isMobile && (
             <Box sx={{ display: 'flex', gap: 1 }}>
-              {menuItems.map((item) => (
+              {adminMenuItems.map((item) => (
                 <Button
                   key={item.text}
                   color="primary"

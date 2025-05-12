@@ -12,6 +12,7 @@ import Transactions from './pages/Transactions';
 import Savings from './pages/Savings';
 import Profile from './pages/Profile';
 import Settings from './pages/Settings';
+import Users from './pages/Users';
 
 // Layout
 import Layout from './components/Layout';
@@ -73,6 +74,11 @@ export default function AppRoutes() {
             </PrivateRoute>
           }
         />
+        <Route path="/users" element={
+          <PrivateRoute>
+            <Users />
+          </PrivateRoute>
+        } />
       </Routes>
     </AnimatePresence>
   );

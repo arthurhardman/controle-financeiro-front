@@ -206,4 +206,16 @@ export const savingService = {
   },
 };
 
+// Serviço de usuários
+export const userService = {
+  list: async () => {
+    const response = await api.get('/auth/users');
+    return response.data;
+  },
+  update: async (id: number, data: { name: string; role: string }) => {
+    const response = await api.put(`/auth/users/${id}`, data);
+    return response.data;
+  },
+};
+
 export default api;
