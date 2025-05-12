@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { TextField, Button, Typography, Box, Container, Alert } from '@mui/material';
+import { TextField, Typography, Box, Container, Alert } from '@mui/material';
 import { authService } from '../services/api';
 import { useLoading } from '../contexts/LoadingContext';
+import { LoadingButton } from '../components/LoadingButton';
 
 const Register: React.FC = () => {
   const navigate = useNavigate();
@@ -14,6 +15,7 @@ const Register: React.FC = () => {
     confirmPassword: ''
   });
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -32,6 +34,7 @@ const Register: React.FC = () => {
       return;
     }
 
+    setIsSubmitting(true);
     try {
       setLoading(true);
       await authService.register(formData.name, formData.email, formData.password);
@@ -40,6 +43,7 @@ const Register: React.FC = () => {
       setError(err.response?.data?.error || 'Erro ao criar conta');
     } finally {
       setLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -108,21 +112,23 @@ const Register: React.FC = () => {
             value={formData.confirmPassword}
             onChange={handleChange}
           />
-          <Button
+          <LoadingButton
             type="submit"
             fullWidth
             variant="contained"
             sx={{ mt: 3, mb: 2 }}
+            loading={isSubmitting}
+            loadingText="Cadastrando..."
           >
             Cadastrar
-          </Button>
+          </LoadingButton>
           <Box sx={{ textAlign: 'center' }}>
-            <Button
+            <LoadingButton
               onClick={() => navigate('/login')}
               sx={{ textTransform: 'none' }}
             >
               Já tem uma conta? Faça login
-            </Button>
+            </LoadingButton>
           </Box>
         </Box>
       </Box>

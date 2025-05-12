@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Paper,
@@ -9,11 +10,11 @@ import {
   Container,
   Alert,
 } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLoading } from '../contexts/LoadingContext';
+import { LoadingButton } from '../components/LoadingButton';
 
-const Login = () => {
+const Login: React.FC = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
   const { setLoading } = useLoading();
@@ -22,6 +23,7 @@ const Login = () => {
     password: '',
   });
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -34,15 +36,17 @@ const Login = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setLoading(true);
+    setIsSubmitting(true);
 
     try {
+      setLoading(true);
       await login(formData.email, formData.password);
       navigate('/');
     } catch (err: any) {
       setError(err.response?.data?.error || 'Erro ao fazer login');
     } finally {
       setLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -101,18 +105,23 @@ const Login = () => {
               value={formData.password}
               onChange={handleChange}
             />
-            <Button
+            <LoadingButton
               type="submit"
               fullWidth
               variant="contained"
               sx={{ mt: 3, mb: 2 }}
+              loading={isSubmitting}
+              loadingText="Entrando..."
             >
               Entrar
-            </Button>
+            </LoadingButton>
             <Box sx={{ textAlign: 'center' }}>
-              <Link href="/register" variant="body2">
-                {"Não tem uma conta? Cadastre-se"}
-              </Link>
+              <LoadingButton
+                onClick={() => navigate('/register')}
+                sx={{ textTransform: 'none' }}
+              >
+                Não tem uma conta? Cadastre-se
+              </LoadingButton>
             </Box>
           </Box>
         </Paper>

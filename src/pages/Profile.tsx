@@ -9,8 +9,7 @@ import {
   Grid,
   Avatar,
   IconButton,
-  Alert,
-  CircularProgress,
+  Alert
 } from '@mui/material';
 import { PhotoCamera as PhotoCameraIcon } from '@mui/icons-material';
 import { authService } from '../services/api';
