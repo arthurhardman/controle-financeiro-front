@@ -411,16 +411,12 @@ export default function Transactions() {
                     <TableCell>{formatCurrency(transaction.amount)}</TableCell>
                     <TableCell>
                       <Chip
-                        label={status?.label}
-                        color={status?.color as any}
+                        label={types.find(t => t.value === transaction.type)?.label}
+                        color={types.find(t => t.value === transaction.type)?.color as any}
                         size="small"
+                        icon={React.createElement(types.find(t => t.value === transaction.type)?.icon as any)}
                         sx={{
                           borderRadius: 2,
-                          color: status?.color === 'warning' ? '#fff' : undefined,
-                          backgroundColor: status?.color === 'warning' ? '#f59e42' : undefined,
-                          '& .MuiChip-label': {
-                            color: status?.color === 'warning' ? '#fff' : undefined,
-                          },
                         }}
                       />
                     </TableCell>
