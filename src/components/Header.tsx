@@ -17,7 +17,7 @@ import {
   Brightness4, 
   Brightness7, 
   AccountCircle, 
-  Savings
+  AccountBalanceWallet
 } from '@mui/icons-material';
 
 export function Header() {
@@ -73,11 +73,11 @@ export function Header() {
           sx={{ mr: 2 }}
           onClick={() => navigate('/')}
         >
-          <Savings />
+          <AccountBalanceWallet />
         </IconButton>
 
         <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-          Controle Financeiro
+          FinanceApp
         </Typography>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
