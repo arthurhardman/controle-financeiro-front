@@ -194,7 +194,7 @@ export default function Navbar() {
               color: 'primary.main',
             }}
           >
-            Controle Financeiro
+            FinanceApp
           </Typography>
           {!isMobile && (
             <Box sx={{ display: 'flex', gap: 1 }}>
